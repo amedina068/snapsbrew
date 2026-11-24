@@ -1,0 +1,409 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "upgrade/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels the old run of that pull request. A run
+# on main or on an upgrade branch always completes.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+
+      - name: Build frontend assets
+        run: npm run build
+
+  vitest:
+    name: JavaScript tests (Vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+
+      # vitest.config.mjs reads only tests/js. Playwright runs tests/e2e in the
+      # e2e job.
+      - name: Run the unit tests
+        run: npm run test:unit
+
+  pint:
+    name: Code style (Pint)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, dom, ctype, fileinfo, openssl, gd, zip, exif, bcmath, intl
+          coverage: none
+
+      # The Composer download cache does not depend on the PHP version, so all
+      # jobs share one key.
+      - name: Read the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Check the code style
+        run: vendor/bin/pint --test
+
+  larastan:
+    name: Static analysis (Larastan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, dom, ctype, fileinfo, openssl, gd, zip, exif, bcmath, intl
+          coverage: none
+
+      # The Composer download cache does not depend on the PHP version, so all
+      # jobs share one key.
+      - name: Read the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Larastan boots the app to read the models, so it needs an app key.
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      # phpstan-baseline.neon holds the errors that existed when the check
+      # started. A new error fails this step.
+      - name: Run Larastan
+        run: composer analyse -- --no-progress --error-format=github
+
+  api-files:
+    name: API files
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, dom, ctype, fileinfo, openssl, pdo, sqlite3, pdo_sqlite, gd, zip, exif, bcmath, intl
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The Composer download cache does not depend on the PHP version, so all
+      # jobs share one key.
+      - name: Read the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      # The files in docs/api come from ApiSpec. If a change to ApiSpec does not
+      # include the files that `composer api-docs` writes, this step fails.
+      - name: Make sure that docs/api is up to date
+        run: |
+          composer api-docs
+          git diff --exit-code docs/api
+
+  test:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.3", "8.4"]
+
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ":memory:"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, dom, ctype, fileinfo, openssl, pdo, sqlite3, pdo_sqlite, gd, zip, exif, bcmath, intl
+          coverage: none
+
+      # The Composer download cache does not depend on the PHP version, so all
+      # jobs share one key.
+      - name: Read the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      # Fast-fail: prove that the full migration chain builds from scratch on a
+      # clean database before the suite runs.
+      - name: Verify fresh migration build
+        run: |
+          touch /tmp/ci.sqlite
+          php artisan migrate:fresh --force --no-interaction
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: /tmp/ci.sqlite
+          # This step runs outside PHPUnit, so a data migration guarded by
+          # `runningUnitTests()` still executes and dispatches its jobs. There is
+          # no queue backend in CI, so discard them. The step proves the schema
+          # builds, and the jobs have their own tests.
+          QUEUE_CONNECTION: 'null'
+
+      - name: Run test suite
+        run: vendor/bin/phpunit
+
+      # Hard gate: any advisory fails the build.
+      - name: Security audit
+        run: composer audit --no-dev
+
+  mysql-ledger:
+    name: MySQL lane
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: snapsbrew_test
+          MYSQL_USER: snapsbrew
+          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: testing
+      CACHE_DRIVER: array
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: snapsbrew_test
+      DB_USERNAME: snapsbrew
+      DB_PASSWORD: password
+      MAIL_MAILER: array
+      # The plan tests render through the queue, and `--no-configuration` below
+      # drops the sync entry of phpunit.xml, so this job sets it.
+      QUEUE_CONNECTION: sync
+      REQUIRE_MYSQL_LEDGER_GATE: 'true'
+      SESSION_DRIVER: array
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, ctype, fileinfo, openssl, pdo_mysql, gd, zip, exif, bcmath, intl
+          coverage: none
+
+      # The Composer download cache does not depend on the PHP version, so all
+      # jobs share one key.
+      - name: Read the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare MySQL schema
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          php artisan migrate:fresh --force --no-interaction
+
+      - name: Run the MySQL-only tests
+        run: |
+          mkdir -p storage/test-results
+          vendor/bin/phpunit \
+            --no-configuration \
+            --bootstrap vendor/autoload.php \
+            tests/Unit/Support/ExplainsCapturedQueriesTest.php \
+            tests/Feature/MySqlCreativePackageSchemaTest.php \
+            tests/Feature/MySqlCreativePackageItemSchemaTest.php \
+            tests/Feature/MySqlApiLogIndexTest.php \
+            tests/Feature/Concurrency/MySqlCreativePackageClaimRaceTest.php \
+            tests/Feature/Concurrency/MySqlCreativePackageFenceRaceTest.php \
+            tests/Feature/Performance/CreativePackageQueryCountTest.php \
+            tests/Feature/Performance/MySqlCreativePackageAccessPlanTest.php \
+            tests/Feature/CreativePackageMediaTest.php \
+            tests/Feature/CreativePackageReconcilerTest.php \
+            tests/Feature/CreativePackageRetentionTest.php \
+            --log-junit storage/test-results/mysql-ledger-junit.xml
+
+      - name: Require the creative-package evidence files
+        run: |
+          test -f storage/test-results/creative-package-access-plans.json
+
+      - name: Store MySQL lane evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mysql-lane
+          path: storage/test-results/
+          if-no-files-found: error
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Do not set DB_CONNECTION or DB_DATABASE here, and do not copy .env.example
+    # to .env. The suite writes .env.e2e itself, and a process variable wins
+    # over the values in that file.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, dom, ctype, fileinfo, openssl, pdo, sqlite3, pdo_sqlite, gd, zip, exif, bcmath, intl
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The Composer download cache does not depend on the PHP version, so all
+      # jobs share one key.
+      - name: Read the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install frontend dependencies
+        run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+
+      - name: Install the Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # The Playwright webServer writes .env.e2e, runs `npm run build`, seeds a
+      # new SQLite database with E2eSeeder and serves the app on port 8787. No
+      # render, mail or outside service runs.
+      - name: Run the E2E suite
+        run: npm run test:e2e
+
+      - name: Store the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

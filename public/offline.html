@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#211d1a">
+  <title>Offline | Snapsbrew</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f5ecd7; color: #211d1a; font: 16px/1.6 system-ui, sans-serif; }
+    main { max-width: 440px; padding: 36px; background: #fff; border: 3px solid #211d1a; box-shadow: 8px 8px 0 #211d1a; }
+    img { width: 72px; height: 72px; }
+    h1 { margin: 20px 0 8px; font-size: 2rem; line-height: 1.2; }
+    p { margin: 0 0 24px; }
+    button { padding: 12px 20px; border: 3px solid #211d1a; background: #f0573f; color: #211d1a; font: inherit; font-weight: 700; cursor: pointer; }
+    button:focus-visible { outline: 3px solid #0c7e85; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/icons/icon-192.png" alt="" width="72" height="72">
+    <h1>You're offline</h1>
+    <p>Snapsbrew needs a connection to load your templates and account. Check your connection and try again.</p>
+    <button type="button" onclick="location.reload()">Try again</button>
+  </main>
+</body>
+</html>

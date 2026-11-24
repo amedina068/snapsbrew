@@ -1,0 +1,17 @@
+# Static analysis with Larastan. Run `composer analyse`.
+#
+# phpstan-baseline.neon holds the errors that the code had when the check
+# started. A new error fails the check. To accept the current errors again,
+# run `composer analyse -- --generate-baseline`. Do not add a new error to the
+# baseline when you can correct the code.
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+    # A pull request that corrects an error leaves its baseline entry behind.
+    # The entry then matches nothing, and that is not a failure.
+    reportUnmatchedIgnoredErrors: false

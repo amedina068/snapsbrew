@@ -1,0 +1,3 @@
+# Each issue uses a template. GitHub adds a "Report a security vulnerability"
+# link to the template list when private vulnerability reporting is on.
+blank_issues_enabled: false

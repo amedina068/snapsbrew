@@ -1,0 +1,14 @@
+# Caddy reverse proxy in front of the Snapsbrew Docker stack.
+#
+# The web container answers plain HTTP on 127.0.0.1:8080 (APP_PORT). Caddy
+# gets a certificate, terminates TLS and sends the original Host header and
+# the X-Forwarded-* headers by default.
+#
+# 1. Replace snapsbrew.example with the host of APP_URL.
+# 2. Copy this file to /etc/caddy/Caddyfile.
+# 3. Run: systemctl reload caddy
+# 4. Set TRUSTED_PROXIES in .env to the gateway address of the Docker network.
+
+snapsbrew.example {
+	reverse_proxy 127.0.0.1:8080
+}

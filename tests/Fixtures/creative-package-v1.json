@@ -1,0 +1,15 @@
+{
+    "idempotency_key": "launch-fall-2026",
+    "items": [
+        {"client_creative_id": "launch-square", "client_family_id": "launch-family",
+         "template_id": "11111111-1111-4111-8111-111111111111", "template_version": 1,
+         "label": "Launch square", "placement_key": "instagram.feed.organic", "caption": "Meet the new collection.",
+         "alt_text": "New collection arranged on a blue background.", "metadata": {"ratio": "1:1", "campaign": "fall"}, "format": "png"},
+        {"client_creative_id": "launch-portrait", "client_family_id": "launch-family",
+         "template_id": "22222222-2222-4222-8222-222222222222", "template_version": 2, "label": "Launch portrait",
+         "alt_text": "Portrait announcement for the new collection.", "metadata": {"ratio": "4:5", "campaign": "fall"}, "format": "jpeg"},
+        {"client_creative_id": "launch-story", "client_family_id": "launch-family",
+         "template_id": "33333333-3333-4333-8333-333333333333", "template_version": 3, "label": "Launch story",
+         "alt_text": "Vertical story announcing the new collection.", "metadata": {"ratio": "9:16", "campaign": "fall"}, "format": "webp"}
+    ]
+}

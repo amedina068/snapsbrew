@@ -1,0 +1,29 @@
+# Warm, pooled headless Chrome for snap rendering.
+#
+# Snapsbrew's BrowserlessRenderer POSTs the snap document HTML to this service's
+# /screenshot and /pdf endpoints and gets back raw image/PDF bytes — no Chrome
+# or node on the app servers. Selected by RENDER_DRIVER=browserless.
+#
+# Secrets: BROWSERLESS_TOKEN is read from the deploy environment, never committed.
+# Export it (or put it in an uncommitted .env beside this file) before `up`.
+services:
+  browserless:
+    image: ghcr.io/browserless/chromium:v2.38.1   # pin (v-prefixed) — never :latest in prod
+    restart: unless-stopped
+    ports:
+      # localhost only: the token is the sole auth, so never expose :3000
+      # publicly. Reach it cross-host over a private network instead.
+      - "127.0.0.1:3000:3000"
+    environment:
+      TOKEN: ${BROWSERLESS_TOKEN}
+      CONCURRENT: 10            # match Horizon's render worker count
+      QUEUED: 20               # overflow waits in queue instead of erroring
+      TIMEOUT: 15000           # ms — keep in sync with BROWSERLESS_TIMEOUT (s)
+      MAX_MEMORY_PERCENT: 80   # browserless recycles Chrome before OOM
+      MAX_CPU_PERCENT: 90
+    mem_limit: 2g              # hard container ceiling
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/json/version?token=${BROWSERLESS_TOKEN}"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

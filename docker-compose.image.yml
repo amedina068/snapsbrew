@@ -1,0 +1,139 @@
+# Self-host Snapsbrew with the published Docker image. No build is needed.
+#
+# This file is the same stack as docker-compose.yml, but the app containers
+# use the image from the GitHub Container Registry. When you change one
+# file, change the other file too.
+#
+# 1. Put this file and .env.docker.example in an empty folder.
+# 2. Copy .env.docker.example to .env. Fill in APP_KEY, APP_URL and the
+#    passwords.
+# 3. Run: docker compose -f docker-compose.image.yml up -d
+# 4. Run: docker compose -f docker-compose.image.yml logs web
+#    Open the setup URL from the log and create the owner account.
+#
+# SNAPSBREW_VERSION selects the image tag. The default is "latest". Set an
+# exact version, for example SNAPSBREW_VERSION=0.1.0, so that an update
+# happens only when you change the value.
+#
+# To update, change SNAPSBREW_VERSION (or keep "latest") and run:
+#   docker compose -f docker-compose.image.yml pull
+#   docker compose -f docker-compose.image.yml up -d
+
+x-app: &app
+  image: ${SNAPSBREW_IMAGE:-ghcr.io/amedina068/snapsbrew}:${SNAPSBREW_VERSION:-latest}
+  restart: unless-stopped
+  env_file: .env
+  environment: &app-env
+    DB_CONNECTION: mysql
+    DB_HOST: mysql
+    DB_PORT: 3306
+    REDIS_HOST: redis
+    REDIS_PASSWORD: "null"
+    CACHE_DRIVER: redis
+    QUEUE_CONNECTION: redis
+    SESSION_DRIVER: redis
+    RENDER_DRIVER: browserless
+    BROWSERLESS_URL: http://browserless:3000
+  volumes:
+    # The rendered images, the uploads, the Passport keys and the logs.
+    - storage:/var/www/html/storage
+  depends_on: &app-depends
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    browserless:
+      condition: service_healthy
+
+services:
+  web:
+    <<: *app
+    ports:
+      # The app listens on the loopback interface of the host by default. Put a
+      # reverse proxy on the host in front of it. Set APP_BIND=0.0.0.0 only if
+      # the app must take traffic from other hosts with no proxy.
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
+    environment:
+      <<: *app-env
+      AUTORUN_ENABLED: "true"
+      AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
+      # Create the Passport keys and print the setup URL at start.
+      SNAPSBREW_PREPARE_ON_START: "true"
+    healthcheck:
+      start_period: 600s
+      start_interval: 5s
+
+  horizon:
+    <<: *app
+    command: ["php", "artisan", "horizon"]
+    stop_signal: SIGTERM
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD", "healthcheck-horizon"]
+      start_period: 30s
+    depends_on:
+      <<: *app-depends
+      web:
+        condition: service_healthy
+
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 30s
+    depends_on:
+      <<: *app-depends
+      web:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-snapsbrew}
+      MYSQL_USER: ${DB_USERNAME:-snapsbrew}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
+    volumes:
+      - mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Pooled headless Chrome. Its port stays inside the compose network.
+  browserless:
+    image: ghcr.io/browserless/chromium:v2.38.1
+    restart: unless-stopped
+    environment:
+      TOKEN: ${BROWSERLESS_TOKEN:?Set BROWSERLESS_TOKEN in .env}
+      CONCURRENT: 5
+      QUEUED: 20
+      # Milliseconds. Keep it equal to BROWSERLESS_TIMEOUT of the app.
+      TIMEOUT: 15000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf \"http://localhost:3000/json/version?token=$${TOKEN}\" > /dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  storage:
+  mysql:
+  redis:

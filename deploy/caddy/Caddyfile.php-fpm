@@ -1,0 +1,22 @@
+# Caddy for Snapsbrew without Docker (Caddy and PHP-FPM).
+#
+# 1. Replace snapsbrew.example, /var/www/snapsbrew and the PHP-FPM socket
+#    with your values.
+# 2. Copy this file to /etc/caddy/Caddyfile.
+# 3. Run: systemctl reload caddy
+#
+# php_fastcgi sends each request for a file that does not exist to
+# public/index.php. The OAuth discovery documents under /.well-known/ go to
+# the app this way.
+
+snapsbrew.example {
+	root * /var/www/snapsbrew/public
+	encode zstd gzip
+
+	php_fastcgi unix//run/php/php8.4-fpm.sock {
+		# A sync render waits for the renderer. The Docker image uses 99 seconds.
+		read_timeout 100s
+	}
+
+	file_server
+}

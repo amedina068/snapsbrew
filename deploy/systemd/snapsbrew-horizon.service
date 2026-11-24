@@ -1,0 +1,28 @@
+# systemd unit for the Horizon queue workers of Snapsbrew without Docker.
+#
+# 1. Replace www-data, /var/www/snapsbrew and /usr/bin/php with your values.
+# 2. Copy this file to /etc/systemd/system/snapsbrew-horizon.service.
+# 3. Run: systemctl daemon-reload && systemctl enable --now snapsbrew-horizon
+#
+# After each deploy, run `php artisan horizon:terminate`. Horizon stops after
+# the current jobs, and systemd starts it again with the new code.
+
+[Unit]
+Description=Snapsbrew Horizon queue workers
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/snapsbrew
+ExecStart=/usr/bin/php artisan horizon
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+# The longest job is a creative package item, with a timeout of 120 seconds.
+TimeoutStopSec=130
+
+[Install]
+WantedBy=multi-user.target

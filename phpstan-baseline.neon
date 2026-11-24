@@ -1,0 +1,1495 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method App\\Actions\\Fortify\\AuthenticateUser\:\:__invoke\(\) should return App\\Models\\User\|null but returns Illuminate\\Contracts\\Auth\\Authenticatable\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Actions/Fortify/AuthenticateUser.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Actions/Fortify/CreateNewUser.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:users\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Actions/Instance/DeleteUser.php
+
+		-
+			message: '#^Parameter \#1 \$company of method App\\Actions\\Instance\\DeleteUser\:\:deleteCompany\(\) expects App\\Models\\Company, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Actions/Instance/DeleteUser.php
+
+		-
+			message: '#^Method App\\Auth\\ActiveUserProvider\:\:retrieveById\(\) should return \(Illuminate\\Contracts\\Auth\\Authenticatable&Illuminate\\Database\\Eloquent\\Model\)\|null but returns Illuminate\\Contracts\\Auth\\Authenticatable\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Auth/ActiveUserProvider.php
+
+		-
+			message: '#^Method App\\Auth\\ActiveUserProvider\:\:retrieveByToken\(\) should return \(Illuminate\\Contracts\\Auth\\Authenticatable&Illuminate\\Database\\Eloquent\\Model\)\|null but returns Illuminate\\Contracts\\Auth\\Authenticatable\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Auth/ActiveUserProvider.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: mixed$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Builders/LayerBuilder.php
+
+		-
+			message: '#^Property App\\Builders\\PropertyBuilder\:\:\$property is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Builders/PropertyBuilder.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Console/Commands/BackfillTemplateEditorDocuments.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Console/Commands/UserListCommand.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\User\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Console/Commands/UserListCommand.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Exceptions\\Handler\:\:\$dontFlash is not covariant with PHPDoc type array\<int, string\> of overridden property Illuminate\\Foundation\\Exceptions\\Handler\:\:\$dontFlash\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Exceptions/Handler.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Exceptions\\Handler\:\:\$dontReport is not covariant with PHPDoc type array\<int, class\-string\<Throwable\>\> of overridden property Illuminate\\Foundation\\Exceptions\\Handler\:\:\$dontReport\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Exceptions/Handler.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\ApiKey\:\:\$renders_last_7_days\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AccountController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$users\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AccountController.php
+
+		-
+			message: '#^Access to an undefined property Laravel\\Sanctum\\PersonalAccessToken\:\:\$renders_last_7_days\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/AccountController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:invitations\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/AccountController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/TemplateTagController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/TemplateTagController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/TemplateTagController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Api/TemplateTagController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$layers\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/EmbeddedFormController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Controllers/Api/V1/EmbeddedFormController.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Controllers\\Api\\V1\\EmbeddedFormController\:\:response\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/EmbeddedFormController.php
+
+		-
+			message: '#^Parameter \#3 \$template of method App\\Http\\Controllers\\Api\\V1\\EmbeddedFormController\:\:handleTemplateForm\(\) expects App\\Models\\Template, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/EmbeddedFormController.php
+
+		-
+			message: '#^Parameter \#3 \$templateCollection of method App\\Http\\Controllers\\Api\\V1\\EmbeddedFormController\:\:handleCollectionForm\(\) expects App\\Models\\TemplateCollection, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/EmbeddedFormController.php
+
+		-
+			message: '#^Parameter \#4 \$user of method App\\Http\\Controllers\\Api\\V1\\EmbeddedFormController\:\:handleCollectionForm\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/EmbeddedFormController.php
+
+		-
+			message: '#^Parameter \#4 \$user of method App\\Http\\Controllers\\Api\\V1\\EmbeddedFormController\:\:handleTemplateForm\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/EmbeddedFormController.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Eloquent\\Builder\<Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\>\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, ''DESC'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/MediaController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:screenshots\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/ScreenshotController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: string, identifier\: string\|null, status\: string, media_url\: mixed, last_error\: string\|null\}, Closure\(App\\Models\\Snap\)\: array\{id\: string, identifier\: string\|null, status\: string, media_url\: mixed, last_error\: string\|null\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/SnapBatchController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\Collection\<int, mixed\>\:\:load\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/SnapController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\V1\\SnapController\:\:response\(\) invoked with 3 parameters, 4\-5 required\.$#'
+			identifier: arguments.count
+			count: 3
+			path: app/Http/Controllers/Api/V1/SnapController.php
+
+		-
+			message: '#^Parameter \#1 \$template of method App\\Http\\Controllers\\Api\\V1\\SnapController\:\:createSnap\(\) expects App\\Models\\Template, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/SnapController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$version_number\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/TemplateController.php
+
+		-
+			message: '#^Parameter \#1 \$data of static method App\\Http\\Responses\\ApiResponse\:\:data\(\) expects array\<string, mixed\>, array\<int, array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/TemplateController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$imageUrl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/CertificateCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/CertificateCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addHead\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/CertificateCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getPdf\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/CertificateCreatorController.php
+
+		-
+			message: '#^Parameter \#1 \$snap of job class App\\Jobs\\RemoveFreeToolSnap constructor expects App\\Models\\Snap in App\\Jobs\\RemoveFreeToolSnap\:\:dispatch\(\), Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/CertificateCreatorController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$imageUrl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TestimonialImageCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TestimonialImageCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addHead\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TestimonialImageCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getImage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TestimonialImageCreatorController.php
+
+		-
+			message: '#^Parameter \#1 \$snap of job class App\\Jobs\\RemoveFreeToolSnap constructor expects App\\Models\\Snap in App\\Jobs\\RemoveFreeToolSnap\:\:dispatch\(\), Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TestimonialImageCreatorController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$imageUrl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TwitterGraphImageCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TwitterGraphImageCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addHead\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TwitterGraphImageCreatorController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getImage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TwitterGraphImageCreatorController.php
+
+		-
+			message: '#^Parameter \#1 \$snap of job class App\\Jobs\\RemoveFreeToolSnap constructor expects App\\Models\\Snap in App\\Jobs\\RemoveFreeToolSnap\:\:dispatch\(\), Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Tools/TwitterGraphImageCreatorController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/CompanyInvitationController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:invitations\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/CompanyInvitationController.php
+
+		-
+			message: '#^Parameter \#1 \$company of static method App\\Support\\InvitationQuota\:\:take\(\) expects App\\Models\\Company, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/CompanyInvitationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$first_snap_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/DashboardController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:screenshots\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/DashboardController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:snaps\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Http/Controllers/DashboardController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:templates\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/DashboardController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$layers\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/EmbeddedFormController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/EmbeddedFormController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/EmbeddedFormController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isDeactivated\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/EmbeddedFormController.php
+
+		-
+			message: '#^Parameter \#2 \$template of method App\\Http\\Controllers\\EmbeddedFormController\:\:buildTemplateLayers\(\) expects App\\Models\\Template, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/EmbeddedFormController.php
+
+		-
+			message: '#^Parameter \#2 \$templateCollection of method App\\Http\\Controllers\\EmbeddedFormController\:\:buildCollectionLayers\(\) expects App\\Models\\TemplateCollection, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/EmbeddedFormController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/LogController.php
+
+		-
+			message: '#^Parameter \#1 \$form of method App\\Http\\Controllers\\LogController\:\:resolveFormLink\(\) expects App\\Models\\Form\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/LogController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Parameter \#1 \$company of method App\\Http\\Controllers\\OnboardingController\:\:inviteIfPossible\(\) expects App\\Models\\Company, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Parameter \#1 \$invitation of class App\\Mail\\CompanyInvitationMail constructor expects App\\Models\\CompanyInvitation, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/OnboardingController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:screenshots\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ScreenshotController.php
+
+		-
+			message: '#^Parameter \#2 \$create of method App\\Services\\SnapSourceVersioner\:\:createSnap\(\) expects callable\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: App\\Models\\Snap, Closure\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/SnapCreateController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:uuid\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/SnapImportController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$formable\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/SnapshotController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Http/Controllers/SnapshotController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isForCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/SnapshotController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:isForTemplate\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/SnapshotController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>uuid" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/SnapshotController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:templates\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/TemplateCollectionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$layers\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Http/Controllers/TemplateCollectionFormController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/TemplateVersionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$creator\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/TemplateVersionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/TemplateVersionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$preview_image\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/TemplateVersionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$published\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/TemplateVersionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$version_number\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/TemplateVersionController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/TemplateVersionController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:rotateWebhookSecret\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/WebhookSecretController.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Http\\Kernel\:\:\$middleware is not covariant with PHPDoc type array\<int, string\> of overridden property Illuminate\\Foundation\\Http\\Kernel\:\:\$middleware\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Kernel.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Http\\Kernel\:\:\$middlewareAliases is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Foundation\\Http\\Kernel\:\:\$middlewareAliases\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Kernel.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Http\\Kernel\:\:\$middlewareGroups is not covariant with PHPDoc type array\<string, array\<int, string\>\> of overridden property Illuminate\\Foundation\\Http\\Kernel\:\:\$middlewareGroups\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Kernel.php
+
+		-
+			message: '#^Method App\\Http\\Middleware\\Authenticate\:\:redirectTo\(\) should return string\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: app/Http/Middleware/Authenticate.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Http\\Middleware\\EncryptCookies\:\:\$except is not covariant with PHPDoc type array\<int, string\> of overridden property Illuminate\\Cookie\\Middleware\\EncryptCookies\:\:\$except\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Middleware/EncryptCookies.php
+
+		-
+			message: '#^Instanceof between App\\Models\\User and App\\Models\\User will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Http/Middleware/LogoutDeactivatedUser.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Http\\Middleware\\PreventRequestsDuringMaintenance\:\:\$except is not covariant with PHPDoc type array\<int, string\> of overridden property Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance\:\:\$except\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Middleware/PreventRequestsDuringMaintenance.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Http\\Middleware\\TrimStrings\:\:\$except is not covariant with PHPDoc type array\<int, string\> of overridden property Illuminate\\Foundation\\Http\\Middleware\\TrimStrings\:\:\$except\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Middleware/TrimStrings.php
+
+		-
+			message: '#^PHPDoc type array\|string\|null of property App\\Http\\Middleware\\TrustProxies\:\:\$proxies is not covariant with PHPDoc type array\<int, string\>\|string\|null of overridden property Illuminate\\Http\\Middleware\\TrustProxies\:\:\$proxies\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Middleware/TrustProxies.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Http\\Middleware\\VerifyCsrfToken\:\:\$except is not covariant with PHPDoc type array\<int, string\> of overridden property Illuminate\\Foundation\\Http\\Middleware\\PreventRequestForgery\:\:\$except\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Http/Middleware/VerifyCsrfToken.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScreenshotResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScreenshotResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScreenshotResource\:\:\$height\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScreenshotResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScreenshotResource\:\:\$imageUrl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScreenshotResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScreenshotResource\:\:\$url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScreenshotResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScreenshotResource\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScreenshotResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScreenshotResource\:\:\$width\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScreenshotResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$completed_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$imageUrl\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$is_async\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$last_error\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$template\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$variants\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SnapResource\:\:\$webhook_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SnapResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$company\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$editor_document\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$groups\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$height\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$layers\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$webhook_secret\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$width\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Parameter \#1 \$import of method App\\Jobs\\ProcessSnap\:\:incrementImportProgress\(\) expects App\\Models\\SnapImport\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 3
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Parameter \#1 \$request of method App\\Http\\Resources\\SnapResource\:\:toArray\(\) expects Illuminate\\Http\\Request, null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Jobs/ProcessSnap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/ApplyEditorOperationsTool.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\EditorDocumentRateLimiter\:\:attempt\(\) expects App\\Models\\User, Illuminate\\Contracts\\Auth\\Authenticatable\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Mcp/Tools/ApplyEditorOperationsTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/CancelSnapsBatchTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Mcp/Tools/CreateSnapFromDesignTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/CreateSnapFromDesignTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Mcp/Tools/CreateSnapTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/CreateSnapTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Mcp/Tools/CreateSnapsBatchTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/CreateSnapsBatchTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/CreateTemplateTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/CreateTemplateTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/EditTemplateTool.php
+
+		-
+			message: '#^Parameter \#1 \$actor of method App\\Services\\CreativePackageClaim\:\:claim\(\) expects App\\Models\\User, Illuminate\\Contracts\\Auth\\Authenticatable\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Mcp/Tools/ExportCreativePackageTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/GetCreativePackageTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/GetEditorDocumentTool.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\EditorDocumentRateLimiter\:\:attempt\(\) expects App\\Models\\User, Illuminate\\Contracts\\Auth\\Authenticatable\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Mcp/Tools/GetEditorDocumentTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/GetSnapsBatchTool.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: string, identifier\: string\|null, status\: string, media_url\: mixed, last_error\: string\|null\}, Closure\(App\\Models\\Snap\)\: array\{id\: string, identifier\: string\|null, status\: string, media_url\: mixed, last_error\: string\|null\} given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Mcp/Tools/GetSnapsBatchTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/GetTemplateDetailsTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$version_number\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/GetTemplateDetailsTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Mcp/Tools/ListTemplatesTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/PreflightEditorDocumentTool.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\EditorDocumentRateLimiter\:\:attempt\(\) expects App\\Models\\User, Illuminate\\Contracts\\Auth\\Authenticatable\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Mcp/Tools/PreflightEditorDocumentTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/PreviewDesignTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/PreviewSnapTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/PreviewTemplateTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/PublishTemplateTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/PutEditorDocumentTool.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\EditorDocumentRateLimiter\:\:attempt\(\) expects App\\Models\\User, Illuminate\\Contracts\\Auth\\Authenticatable\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Mcp/Tools/PutEditorDocumentTool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$company\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/WhoAmITool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/WhoAmITool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Contracts\\Auth\\Authenticatable\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Mcp/Tools/WhoAmITool.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Form.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$height\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Snap.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$width\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Snap.php
+
+		-
+			message: '#^Static method Illuminate\\Support\\Str\:\:uuid\(\) invoked with 1 parameter, 0 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: app/Models/Snap.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SnapImport\:\:\$canceled_snaps_count\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/SnapImport.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SnapImport\:\:\$completed_snaps_count\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/SnapImport.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SnapImport\:\:\$failed_snaps_count\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/SnapImport.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\SnapImport\:\:\$pending_snaps_count\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/SnapImport.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$editor_document\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$groups\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Template.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$height\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$layers\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Models/Template.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$width\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addContent\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addHead\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:clearMediaCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Models/Template.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:renderImageBase64\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/Template.php
+
+		-
+			message: '#^Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver\:\:nonOptimized\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Models/Template.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$height\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TemplateVersion.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$width\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Models/TemplateVersion.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:renderToBase64\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Models/TemplateVersion.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\User\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\User\:\:\$fillable is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$fillable\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\User\:\:\$hidden is not covariant with PHPDoc type list\<string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$hidden\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Providers\\AuthServiceProvider\:\:\$policies is not covariant with PHPDoc type array\<class\-string, class\-string\> of overridden property Illuminate\\Foundation\\Support\\Providers\\AuthServiceProvider\:\:\$policies\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Providers/AuthServiceProvider.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Providers\\EventServiceProvider\:\:\$listen is not covariant with PHPDoc type array\<string, array\<int, string\>\> of overridden property Illuminate\\Foundation\\Support\\Providers\\EventServiceProvider\:\:\$listen\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Providers/EventServiceProvider.php
+
+		-
+			message: '#^PHPDoc tag @var above a method has no effect\.$#'
+			identifier: varTag.misplaced
+			count: 1
+			path: app/Providers/RouteServiceProvider.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>company_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Providers/RouteServiceProvider.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Providers/RouteServiceProvider.php
+
+		-
+			message: '#^Instanceof between Throwable and Throwable will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Services/BrowserlessRenderer.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CreativePackage\:\:\$idempotency_key\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageClaim.php
+
+		-
+			message: '#^Parameter \#2 \$company of static method App\\Services\\CreativePackageClaim\:\:entitled\(\) expects App\\Models\\Company, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/CreativePackageClaim.php
+
+		-
+			message: '#^Parameter \#1 \$package of method App\\Services\\CreativePackageAggregator\:\:recount\(\) expects App\\Models\\CreativePackage, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/CreativePackageItemAttempts.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$creator\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$height\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$template\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$width\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getFirstMedia\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Method App\\Services\\CreativePackageItemExecutor\:\:completedSnap\(\) should return App\\Models\\Snap\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Parameter \#1 \$package of method App\\Services\\CreativePackageAggregator\:\:recount\(\) expects App\\Models\\CreativePackage, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Parameter \#2 \$company of static method App\\Services\\CreativePackageClaim\:\:entitled\(\) expects App\\Models\\Company, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Parameter \#2 \$source of method App\\Services\\SnapService\:\:createFromVersion\(\) expects App\\Models\\TemplateVersion, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/CreativePackageItemExecutor.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$collection_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageMediaResolver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$company_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageMediaResolver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageMediaResolver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$model_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageMediaResolver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$model_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageMediaResolver.php
+
+		-
+			message: '#^Method App\\Services\\CreativePackageMediaResolver\:\:resolve\(\) should return Spatie\\MediaLibrary\\MediaCollections\\Models\\Media\|null but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/CreativePackageMediaResolver.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/CreativePackageMediaSigner.php
+
+		-
+			message: '#^Parameter \#2 \$item of method App\\Services\\CreativePackageMediaResolver\:\:resolve\(\) expects App\\Models\\CreativePackageItem, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/CreativePackageMediaSigner.php
+
+		-
+			message: '#^Parameter \#3 \$item of static method App\\Services\\CreativePackageMediaSigner\:\:url\(\) expects App\\Models\\CreativePackageItem, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/CreativePackageMediaSigner.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$creator\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageReconciler.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageReconciler.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\|Illuminate\\Database\\Eloquent\\Relations\\HasMany\:\:unowned\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/CreativePackageReconciler.php
+
+		-
+			message: '#^Parameter \#1 \$item of method App\\Services\\CreativePackageReconciler\:\:reclaim\(\) expects App\\Models\\CreativePackageItem, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/CreativePackageReconciler.php
+
+		-
+			message: '#^Parameter \#2 \$company of static method App\\Services\\CreativePackageClaim\:\:entitled\(\) expects App\\Models\\Company, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/CreativePackageReconciler.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/CreativePackageRetention.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/CreativePackageSourcePreflight.php
+
+		-
+			message: '#^Method App\\Services\\CreativePackageSourcePreflight\:\:assetLinks\(\) should return array\<int, array\<int, true\>\> but returns array\<array\<int, bool\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/CreativePackageSourcePreflight.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: app/Services/CreativePackageSourcePreflight.php
+
+		-
+			message: '#^Offset ''mime'' on array\{0\: int\<0, max\>, 1\: int\<0, max\>, 2\: int, 3\: string, mime\: string, channels\?\: int, bits\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/EditorAssetIngestion.php
+
+		-
+			message: '#^Method App\\Services\\IdempotencyClaimer\:\:resolve\(\) should return App\\Models\\Snap\|App\\Models\\SnapImport but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 2
+			path: app/Services/IdempotencyClaimer.php
+
+		-
+			message: '#^Method App\\Services\\OAuthConnections\:\:forUser\(\) should return Illuminate\\Support\\Collection\<int, object\{client_id\: string, client_name\: string, connected_at\: Illuminate\\Support\\Carbon, last_token_at\: Illuminate\\Support\\Carbon\}\> but returns Illuminate\\Support\\Collection\<int, object\{client_id\: string, client_name\: mixed, connected_at\: mixed, last_token_at\: mixed\}&stdClass\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/OAuthConnections.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/OAuthConnections.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/OnboardingSnapDispatcher.php
+
+		-
+			message: '#^Parameter \#2 \$create of method App\\Services\\SnapSourceVersioner\:\:createSnap\(\) expects callable\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: App\\Models\\Snap, Closure\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/OnboardingSnapDispatcher.php
+
+		-
+			message: '#^Parameter \#1 \$snap of class App\\Jobs\\ProcessSnap constructor expects App\\Models\\Snap, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/SnapBatchService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SnapImportFinalizer.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$webhook_secret\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SnapImportWebhookDispatcher.php
+
+		-
+			message: '#^Parameter \#2 \$create of method App\\Services\\SnapSourceVersioner\:\:createSnap\(\) expects callable\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: App\\Models\\Snap, Closure\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/SnapService.php
+
+		-
+			message: '#^Parameter \#4 \$create of method App\\Services\\SnapSourceVersioner\:\:createSnapFromVersion\(\) expects callable\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: App\\Models\\Snap, Closure\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/SnapService.php
+
+		-
+			message: '#^Method App\\Services\\SnapSourceVersioner\:\:sourceForLockedTemplate\(\) should return App\\Models\\TemplateVersion but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 2
+			path: app/Services/SnapSourceVersioner.php
+
+		-
+			message: '#^Parameter \#2 of callable callable\(App\\Models\\Template, App\\Models\\TemplateVersion\)\: App\\Models\\Snap expects App\\Models\\TemplateVersion, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/SnapSourceVersioner.php
+
+		-
+			message: '#^Call to function is_int\(\) with int will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/TemplateDocumentService.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: app/Services/TemplateDocumentService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$groups\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/TemplateVersioning.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$layers\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/TemplateVersioning.php
+
+		-
+			message: '#^Method App\\Services\\TemplateVersioning\:\:publish\(\) should return App\\Models\\TemplateVersion but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/TemplateVersioning.php
+
+		-
+			message: '#^Method App\\Services\\TemplateVersioning\:\:snapshot\(\) should return App\\Models\\TemplateVersion but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/TemplateVersioning.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$created_by\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UsageRecorder.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$uuid\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/UsageRecorder.php
+
+		-
+			message: '#^Offset ''429'' on array\<string, array\> in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Support/ApiDocs/OpenApiGenerator.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\CreativePackageItem\:\:\$client_creative_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Support/CreativePackageSerializer.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\<string, mixed\>, Closure\(App\\Models\\CreativePackageItem\)\: array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/CreativePackageSerializer.php
+
+		-
+			message: '#^Parameter \#2 \$items of static method App\\Support\\CreativePackageManifest\:\:build\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\CreativePackageItem\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Support/CreativePackageSerializer.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:can\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Support/SignedUrlKeys.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/View/Components/CodeSnippet.php
+
+		-
+			message: '#^Parameter \#2 \$direction of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Template\>\:\:orderBy\(\) expects ''asc''\|''desc''\|SortDirection, ''DESC'' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/View/Components/DashboardLatestTemplates.php

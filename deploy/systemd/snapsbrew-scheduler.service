@@ -1,0 +1,27 @@
+# systemd unit for the Laravel scheduler of Snapsbrew without Docker.
+#
+# `schedule:work` runs the scheduler each minute, as the scheduler container
+# of the Docker stack does. Use this unit or the cron entry of the docs, not
+# both.
+#
+# 1. Replace www-data, /var/www/snapsbrew and /usr/bin/php with your values.
+# 2. Copy this file to /etc/systemd/system/snapsbrew-scheduler.service.
+# 3. Run: systemctl daemon-reload && systemctl enable --now snapsbrew-scheduler
+
+[Unit]
+Description=Snapsbrew scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/snapsbrew
+ExecStart=/usr/bin/php artisan schedule:work
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

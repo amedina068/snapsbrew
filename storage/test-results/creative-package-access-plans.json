@@ -1,0 +1,197 @@
+{
+    "source_lookup_templates": [
+        {
+            "sql": "select `id`, `uuid`, `width`, `height` from `templates` where `company_id` = ? and `uuid` in (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "plan": [
+                {
+                    "table": "templates",
+                    "key": "templates_company_id_uuid_unique",
+                    "type": "range",
+                    "rows": 10,
+                    "Extra": "Using index condition"
+                }
+            ]
+        }
+    ],
+    "source_lookup_versions": [
+        {
+            "sql": "select * from `template_versions` where ((`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?) or (`template_id` = ? and `version_number` = ?))",
+            "plan": [
+                {
+                    "table": "template_versions",
+                    "key": "template_versions_template_id_version_number_unique",
+                    "type": "range",
+                    "rows": 10,
+                    "Extra": "Using index condition"
+                }
+            ]
+        }
+    ],
+    "replay_lookup": [
+        {
+            "sql": "select * from `creative_packages` where `company_id` = ? and `operation_namespace` = ? and `idempotency_key` = ? limit 1 for update",
+            "plan": [
+                {
+                    "table": "creative_packages",
+                    "key": "creative_packages_company_claim_unique",
+                    "type": "const",
+                    "rows": 1,
+                    "Extra": null
+                }
+            ]
+        }
+    ],
+    "reconciler_items": [
+        {
+            "sql": "select * from `creative_package_items` where `status` in (?) and `retryable` = ? and (`lease_expires_at` is null or `lease_expires_at` < ?) and exists (select * from `creative_packages` where `creative_package_items`.`creative_package_id` = `creative_packages`.`id` and `replay_expires_at` > ?) order by `lease_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_package_items",
+                    "key": "creative_package_items_reconciliation_index",
+                    "type": "range",
+                    "rows": 3500,
+                    "Extra": "Using index condition"
+                },
+                {
+                    "table": "creative_packages",
+                    "key": "PRIMARY",
+                    "type": "eq_ref",
+                    "rows": 1,
+                    "Extra": "Using where"
+                }
+            ]
+        },
+        {
+            "sql": "select * from `creative_package_items` where `status` in (?) and `retryable` = ? and (`lease_expires_at` is null or `lease_expires_at` < ?) and exists (select * from `creative_packages` where `creative_package_items`.`creative_package_id` = `creative_packages`.`id` and `replay_expires_at` > ?) order by `lease_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_package_items",
+                    "key": "creative_package_items_reconciliation_index",
+                    "type": "range",
+                    "rows": 999,
+                    "Extra": "Using index condition"
+                },
+                {
+                    "table": "creative_packages",
+                    "key": "PRIMARY",
+                    "type": "eq_ref",
+                    "rows": 1,
+                    "Extra": "Using where"
+                }
+            ]
+        },
+        {
+            "sql": "select * from `creative_package_items` where `status` in (?) and `retryable` = ? and (`lease_expires_at` is null or `lease_expires_at` < ?) and exists (select * from `creative_packages` where `creative_package_items`.`creative_package_id` = `creative_packages`.`id` and `replay_expires_at` > ?) order by `lease_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_package_items",
+                    "key": "creative_package_items_reconciliation_index",
+                    "type": "range",
+                    "rows": 752,
+                    "Extra": "Using index condition"
+                },
+                {
+                    "table": "creative_packages",
+                    "key": "PRIMARY",
+                    "type": "eq_ref",
+                    "rows": 1,
+                    "Extra": "Using where"
+                }
+            ]
+        }
+    ],
+    "reconciler_packages": [
+        {
+            "sql": "select * from `creative_packages` where `status` = ? and `lease_expires_at` < ? order by `lease_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_packages",
+                    "key": "creative_packages_reconciliation_index",
+                    "type": "range",
+                    "rows": 151,
+                    "Extra": "Using index condition"
+                }
+            ]
+        }
+    ],
+    "retention_packages": [
+        {
+            "sql": "select * from `creative_packages` where `replay_expires_at` < ? order by `replay_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_packages",
+                    "key": "creative_packages_replay_cleanup_index",
+                    "type": "range",
+                    "rows": 101,
+                    "Extra": "Using index condition"
+                }
+            ]
+        },
+        {
+            "sql": "select * from `creative_packages` where `replay_expires_at` < ? and (`replay_expires_at` > ? or (`replay_expires_at` = ? and `id` > ?)) order by `replay_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_packages",
+                    "key": "creative_packages_replay_cleanup_index",
+                    "type": "range",
+                    "rows": 102,
+                    "Extra": "Using index condition"
+                }
+            ]
+        }
+    ],
+    "retention_diagnostics": [
+        {
+            "sql": "select * from `creative_package_items` where `diagnostic_expires_at` <= ? order by `diagnostic_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_package_items",
+                    "key": "creative_package_items_diagnostic_cleanup_index",
+                    "type": "range",
+                    "rows": 674,
+                    "Extra": "Using index condition"
+                }
+            ]
+        },
+        {
+            "sql": "select * from `creative_package_items` where `diagnostic_expires_at` <= ? and (`diagnostic_expires_at` > ? or (`diagnostic_expires_at` = ? and `id` > ?)) order by `diagnostic_expires_at` asc, `id` asc limit 100",
+            "plan": [
+                {
+                    "table": "creative_package_items",
+                    "key": "creative_package_items_diagnostic_cleanup_index",
+                    "type": "range",
+                    "rows": 675,
+                    "Extra": "Using index condition"
+                }
+            ]
+        }
+    ],
+    "media_package_lookup": [
+        {
+            "sql": "select * from `creative_packages` where `uuid` = ? limit 1",
+            "plan": [
+                {
+                    "table": "creative_packages",
+                    "key": "creative_packages_uuid_unique",
+                    "type": "const",
+                    "rows": 1,
+                    "Extra": null
+                }
+            ]
+        }
+    ],
+    "active_count": [
+        {
+            "sql": "select count(*) as `aggregate` from `creative_packages` where `company_id` = ? and `status` = ? and `lease_expires_at` > ?",
+            "plan": [
+                {
+                    "table": "creative_packages",
+                    "key": "creative_packages_active_limit_index",
+                    "type": "range",
+                    "rows": 100,
+                    "Extra": "Using where; Using index"
+                }
+            ]
+        }
+    ]
+}

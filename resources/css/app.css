@@ -1,0 +1,84 @@
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/aspect-ratio';
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+  --font-sans:
+    Poppins, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-display:
+    Righteous, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-script:
+    Pacifico, ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+  --color-atomic-cream: #f5ecd7;
+  --color-atomic-ink: #211d1a;
+  --color-atomic-aqua: #1fb5b8;
+  --color-atomic-aqua-dk: #0c7e85;
+  --color-atomic-coral: #f0573f;
+  --color-atomic-coral-dk: #c63d2a;
+  --color-atomic-mustard: #f2b134;
+  --color-atomic-pink: #f4a9b8;
+  --color-atomic-mint: #bfe3cf;
+  --color-atomic-chrome: #dfe3e6;
+
+  --shadow-atomic: 6px 6px 0 0 #211d1a;
+  --shadow-atomic-lg: 10px 10px 0 0 #211d1a;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* Tailwind CSS v4 changed these two defaults. Keep the v3 look. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+[v-cloak] {
+  display: none;
+}
+
+/*
+  The coral focus ring of the app. Put `focus-ring` on every control that
+  can get keyboard focus. The ring shows only for keyboard focus.
+*/
+@utility focus-ring {
+  &:focus-visible {
+    outline: 3px solid var(--color-atomic-coral);
+    outline-offset: 2px;
+  }
+}
+
+
+.bg-pattern {
+  background-color: #f0fdfa;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%232dd4bf' fill-opacity='0.5' d='M1 3h1v1H1V3zm2-2h1v1H3V1z'%3E%3C/path%3E%3C/svg%3E");
+}

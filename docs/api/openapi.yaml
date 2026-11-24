@@ -1,0 +1,4548 @@
+openapi: 3.0.3
+info:
+  title: 'Snapsbrew API'
+  description: |-
+    Generate images, PDFs and screenshots from reusable templates. The Snapsbrew API turns design templates into a render pipeline you can call from any stack.
+
+    Rate limits: every bearer endpoint is in the `api` group, which allows 60 requests per minute for one user (or one IP address when the request has no user). The two preview endpoints also allow 10 requests per minute for one user. The editor document endpoints also allow 30 requests per minute for one user and 180 for one company. Over a limit, the API returns 429 with a `Retry-After` header. Each response carries `X-RateLimit-Limit` and `X-RateLimit-Remaining`.
+  version: 1.0.0
+  contact:
+    email: hello@example.com
+servers:
+  -
+    url: 'https://app.example.com/api'
+    description: Production
+tags:
+  -
+    name: Authentication
+    description: 'Authenticated endpoints use a Sanctum personal access token. Send it as a bearer token in the Authorization header. Tokens must carry the `api_requests` ability. Authorization: Bearer <your-token> Accept: application/json An endpoint that takes a bearer token answers each error with a JSON body, also when the request has no Accept header.'
+  -
+    name: Guides
+    description: 'Guides are static reference catalogs. They tell you which layer properties exist, which overrides a layer accepts, how to compose a template that looks good, and what the v2 editor document contains. They also tell you what a platform does to an image after you upload it, and what a given kind of image has to achieve. The content never changes between accounts, so you can cache a response and reuse it. These endpoints read no template and no company data. They also stay outside the usage log, so a guide call never appears there.'
+  -
+    name: Templates
+    description: 'Templates are reusable designs with addressable layers. List and read them, or manage them programmatically. All template endpoints are scoped to your company.'
+  -
+    name: 'Editor documents'
+    description: 'An editor document is the v2 draft of a template: its layers, its groups and every design-time property the editor shows. A template renders from that draft, so a change here changes what the next render draws. Every write is a compare-and-swap. Read the document, keep the `revision` it returns, and send that revision back. If the stored revision moved, the write returns `409` with the current revision and the current document. Rebuild the change on top of them and send the write again. Never resend the same body with the returned revision. `PATCH` applies a closed list of operations and changes only the properties you name. `PUT` replaces the whole document and drops every property you leave out. `GET /v1/guides/editor-document` carries the constraints both accept.'
+  -
+    name: Media
+    description: 'Upload and list images stored in your account media library. Use these as image-layer sources in snaps.'
+  -
+    name: Screenshots
+    description: 'Render a web page to an image.'
+  -
+    name: Snaps
+    description: 'A snap renders a template (or every template in a collection) into a finished image or PDF, with your content substituted into each layer. Render synchronously for an instant result, or asynchronously with a webhook for bulk work.'
+  -
+    name: 'Snap batches'
+    description: 'A batch renders up to 100 snaps from ONE template, with a different set of variants per item. The call is always asynchronous: it returns 202 with a batch id, and the items render in the background. Poll the batch to read progress and to collect the image URLs, and cancel it to stop the items that have not started. One webhook is posted when the batch finishes.'
+  -
+    name: Preview
+    description: 'Preview renders a template (optionally with variants) into a WATERMARKED, self-contained HTML document without creating a snap. The response is the rendered HTML — nothing is rasterized and nothing is persisted. Use it to iterate, then call POST /v1/snaps to produce the final, un-watermarked snap image with the same variants. A preview allows 10 requests per minute for one user, in addition to the 60 per minute of the api group.'
+  -
+    name: 'Signed URLs'
+    description: 'A signed URL renders a template from a plain `<img src>` or an `og:image` tag, with no API call and no bearer token. Your server builds the URL and signs it with a signed URL key from the Developers tab of the account page. The signing key is a secret. Sign only on a server. Never sign in a browser. The guide at /documentation/guides/signed-urls has code in PHP, JavaScript, Python and Ruby.'
+  -
+    name: Tags
+    description: 'Tags organise templates. Create them, search them, and attach them to templates. All tags are scoped to your company.'
+  -
+    name: 'Embedded Forms'
+    description: 'Embedded forms render snaps from a signed URL — no API token. The URL must be a Laravel signed URL; an invalid signature returns 404. The render counts in the usage log of the form owner.'
+paths:
+  /v1/auth:
+    get:
+      tags:
+        - Authentication
+      operationId: auth_show
+      summary: 'Verify the current token'
+      description: |-
+        Returns the account the token belongs to, with the company it belongs to. Use it to confirm a token is valid and to read the signed-in identity. `company` is null when the account belongs to no company.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'Token is valid.'
+          content:
+            application/json:
+              example:
+                data:
+                  email: dev@example.com
+                  name: 'Ada Lovelace'
+                  company: 'Analytical Engines'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'Token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/guides/design:
+    get:
+      tags:
+        - Guides
+      operationId: guides_design
+      summary: 'Get the design guide'
+      description: |-
+        Returns design guidance for building a template: canvas presets, the back-to-front layer order, typography and color rules, composition recipes, anti-patterns, and a preflight checklist. Read it before you write a `layers` array.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  typography:
+                    scale: 'On a 1080px canvas: headline 64–120px, subhead 36–56px, body 24–36px.'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/guides/layers:
+    get:
+      tags:
+        - Guides
+      operationId: guides_layers
+      summary: 'Get the layer schema'
+      description: |-
+        Returns the design-time layer vocabulary: the layer object shape, every property name, the value shape of each property, and a worked example. Use it to build the `layers` array a template write accepts.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  property_names:
+                    - textContent
+                    - backgroundType
+                    - fontFamily
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/guides/variant-properties:
+    get:
+      tags:
+        - Guides
+      operationId: guides_variant_properties
+      summary: 'List variant properties'
+      description: |-
+        Returns every property you can apply to a layer in `variants`, with its value type, the layer types it applies to, and an example. Pair it with the `available_modifications` of a template layer.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  -
+                    property: text
+                    value_type: string
+                    applies_to: 'text layers'
+                    description: "Replace a text layer's content."
+                    example:
+                      layer: headline
+                      text: 'Summer Sale — 40% off'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/guides/editor-document:
+    get:
+      tags:
+        - Guides
+      operationId: guides_editor_document
+      summary: 'Get the editor document contract'
+      description: |-
+        Returns the versioned v2 editor-document contract: the resource it describes, property constraints, persistence rules, conflict recovery, and a safe workflow. Read it before you change an editor document.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  contract_version: 2
+                  editor_document_version: 2
+                  resource: template.editor_document
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/guides/platforms:
+    get:
+      tags:
+        - Guides
+      operationId: guides_platforms
+      summary: 'List platform guides'
+      description: |-
+        Returns one line per platform: the size preset to start from, its dimensions and why that preset is the default. Read it to choose a platform, then read that platform for the full rules. The response also carries `specs_reviewed`, the month the published specs were last checked.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  -
+                    platform: instagram
+                    name: Instagram
+                    start_here: instagram_post
+                    dimensions: 1080x1350
+                    why: 'A 4:5 portrait post fills the most vertical space the feed will give a single image.'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/guides/platforms/{platform}':
+    get:
+      tags:
+        - Guides
+      operationId: guides_platform
+      summary: 'Get one platform guide'
+      description: |-
+        Returns everything one platform does to an image: how it crops the frame, the directional UI safe zones where it paints its own controls, the accepted formats and size limits, the export width and color profile, its size presets, and its rules and anti-patterns.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+
+        Note: An alias is accepted. `/v1/guides/platforms/insta` returns the same guide as `/v1/guides/platforms/instagram`.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: platform
+          in: path
+          required: true
+          description: 'A key from the index route, or a common alias. Maximum 64 characters. Valid keys: instagram, facebook, x, linkedin, threads, pinterest, tiktok, youtube, snapchat, whatsapp, web, ads, print.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  platform: instagram
+                  name: Instagram
+                  specs_reviewed: 2026-09
+                  start_here: instagram_post
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'No guide matches the key. The body names every valid key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - available
+                properties:
+                  message:
+                    type: string
+                  available:
+                    type: array
+                    items:
+                      type: string
+              example:
+                message: 'No platform guide matches `myspace`.'
+                available:
+                  - instagram
+                  - facebook
+                  - x
+                  - linkedin
+                  - threads
+                  - pinterest
+                  - tiktok
+                  - youtube
+                  - snapchat
+                  - whatsapp
+                  - web
+                  - ads
+                  - print
+        422:
+          description: 'The key is longer than 64 characters.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The platform must not be greater than 64 characters.'
+                errors:
+                  platform:
+                    - 'The platform must not be greater than 64 characters.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/guides/purposes:
+    get:
+      tags:
+        - Guides
+      operationId: guides_purposes
+      summary: 'List image purpose guides'
+      description: |-
+        Returns one line per purpose: what that kind of image is, when to use it and the size presets that fit it. Read it to choose a purpose, then read that purpose for the full rules.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  -
+                    purpose: link_preview
+                    name: 'Link preview / meta tag image'
+                    use_when: 'You are shipping a page and you want the shared link to look deliberate.'
+                    sizes:
+                      - open_graph
+                      - twitter_card
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/guides/purposes/{purpose}':
+    get:
+      tags:
+        - Guides
+      operationId: guides_purpose
+      summary: 'Get one image purpose guide'
+      description: |-
+        Returns the job one kind of image has to do: the size presets that fit it, the rules and failure modes specific to it, a layer recipe in the Snapsbrew vocabulary, an anti-pattern list and a preflight checklist. The `link_preview` purpose also returns the og: and twitter: meta tags to put in the page head.
+
+        Note: The catalog is the same for every account. Cache the response and refresh it on a new API version.
+
+        Note: A guide call does not appear in the usage log.
+
+        Note: An alias is accepted. `/v1/guides/purposes/og` returns the same guide as `/v1/guides/purposes/link_preview`.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: purpose
+          in: path
+          required: true
+          description: 'A key from the index route, or a common alias. Maximum 64 characters. Valid keys: link_preview, feed_post, carousel, story, profile_picture, cover, video_thumbnail, ad, product_shot, email_header, article_header, presentation_slide.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The catalog, trimmed here to one entry.'
+          content:
+            application/json:
+              example:
+                data:
+                  purpose: link_preview
+                  name: 'Link preview / meta tag image'
+                  layer_recipe: 'base fill -> optional photo with a dark scrim -> headline -> supporting line -> logo.'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'No guide matches the key. The body names every valid key.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - available
+                properties:
+                  message:
+                    type: string
+                  available:
+                    type: array
+                    items:
+                      type: string
+              example:
+                message: 'No purpose guide matches `wallpaper`.'
+                available:
+                  - link_preview
+                  - feed_post
+                  - carousel
+                  - story
+                  - profile_picture
+                  - cover
+                  - video_thumbnail
+                  - ad
+                  - product_shot
+                  - email_header
+                  - article_header
+                  - presentation_slide
+        422:
+          description: 'The key is longer than 64 characters.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The purpose must not be greater than 64 characters.'
+                errors:
+                  purpose:
+                    - 'The purpose must not be greater than 64 characters.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/templates:
+    get:
+      tags:
+        - Templates
+      operationId: templates_index
+      summary: 'List templates'
+      description: |-
+        Returns a cursor-paginated list of your templates.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: cursor
+          in: query
+          required: false
+          description: "Cursor token from a previous response's meta.next_cursor."
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'A page of templates.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TemplateListItem'
+                  meta:
+                    $ref: '#/components/schemas/CursorMeta'
+              example:
+                data:
+                  -
+                    uuid: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                    title: 'Template 1'
+                    width: 1200
+                    height: 630
+                    layers:
+                      -
+                        layer: review_title
+                        available_modifications:
+                          text: 'The worst Time-Travel movie ever made'
+                    created_at: '2026-05-01T12:00:00Z'
+                meta:
+                  previous_cursor: null
+                  next_cursor: eyJpZCI6MTB9
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        422:
+          description: 'A query parameter failed a rule.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The cursor must be a string.'
+                errors:
+                  cursor:
+                    - 'The cursor must be a string.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+    post:
+      tags:
+        - Templates
+      operationId: templates_store
+      summary: 'Create a template'
+      description: |-
+        Creates a template and generates its preview image. Requires the create-template policy.
+
+        Gates: policy:create,Template.
+
+        Note: Send a `size` preset or an explicit `width`/`height`. A template saved with dimensions that match a preset is stored under that preset.
+
+        Note: A body with no `size` and no `width`/`height` answers 422. A create has no stored canvas to fall back on.
+
+        Note: The response holds the six fields above and nothing more. Read GET /v1/templates/{templateUuid} for the parsed layers and the publish state.
+      security:
+        -
+          bearerToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: 'Template name. Rules: required|string|max:255.'
+                size:
+                  type: string
+                  description: 'Canvas size preset, for example "instagram_story" or "youtube_thumbnail". It sets width and height for you. GET /v1/templates/sizes lists every preset. Rules: nullable|in:<preset>.'
+                width:
+                  type: integer
+                  description: 'Canvas width in pixels. Required when you send no size preset. Ignored when you send a size preset. Rules: required_without:size|numeric|min:1|max:4000.'
+                height:
+                  type: integer
+                  description: 'Canvas height in pixels. Required when you send no size preset. Ignored when you send a size preset. Rules: required_without:size|numeric|min:1|max:4000.'
+                layers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/LayerDefinition'
+                  description: 'Layer objects; stored JSON-encoded. An absent or null list creates an empty canvas. Rules: nullable|array, each layer needs a unique key and a properties array.'
+                groups:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                    properties:
+                      id:
+                        type: string
+                        maxLength: 64
+                      name:
+                        type: string
+                        nullable: true
+                        maxLength: 255
+                      visible:
+                        type: boolean
+                      collapsed:
+                        type: boolean
+                      order:
+                        type: integer
+                  description: 'Editor layer groups, in the shape that the editor saves. Send null to remove the groups. Rules: nullable|array, each group needs an id.'
+              required:
+                - title
+            example:
+              title: 'Launch card'
+              size: open_graph
+              layers: []
+      responses:
+        200:
+          description: 'Template created.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - message
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TemplateSummary'
+                  message:
+                    type: string
+              example:
+                data:
+                  uuid: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                  title: 'Launch card'
+                  size: open_graph
+                  width: 1200
+                  height: 630
+                  created_at: '2026-05-01T12:00:00Z'
+                message: 'Template created successfully'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to create templates.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        422:
+          description: 'The body names no canvas, or a field failed a rule.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'Send a `size` preset or an explicit `width` and `height`.'
+                errors:
+                  width:
+                    - 'Send a `size` preset or an explicit `width` and `height`.'
+                  height:
+                    - 'Send a `size` preset or an explicit `width` and `height`.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/templates/sizes:
+    get:
+      tags:
+        - Templates
+      operationId: templates_sizes
+      summary: 'List canvas size presets'
+      description: |-
+        Returns every canvas size preset a template write accepts as `size` — Instagram, Facebook, X, LinkedIn, Threads, Pinterest, TikTok, YouTube, Snapchat, WhatsApp, web and email, display ads, and print. Each preset gives its dimensions, aspect ratio, and the safe margin to keep content away from the edges.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      responses:
+        200:
+          description: 'The preset catalog.'
+          content:
+            application/json:
+              example:
+                data:
+                  -
+                    size: instagram_story
+                    name: 'Instagram Story (1080x1920)'
+                    platform: Instagram
+                    width: 1080
+                    height: 1920
+                    aspect_ratio: '9:16'
+                    safe_margin_px: 97
+                  -
+                    size: open_graph
+                    name: 'Open Graph / Link Preview (1200x630)'
+                    platform: 'Web & email'
+                    width: 1200
+                    height: 630
+                    aspect_ratio: '1.9:1'
+                    safe_margin_px: 47
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/templates/{templateUuid}':
+    get:
+      tags:
+        - Templates
+      operationId: templates_show
+      summary: 'Get a template'
+      description: |-
+        Returns a single template, its parsed layers and its publish state. The layers are the draft, so read `has_unpublished_edits` to know whether the draft is what renders.
+
+        Gates: logApiRequest.
+
+        Note: BREAKING CHANGE. The template fields moved under a `data` key. Read `data.uuid`, not `uuid`. The template, auth, guide, screenshot and tag endpoints wrap the resource in `data`. A list adds `meta` and a write adds `message`.
+
+        Note: Not every success body has a `data` key. POST /v1/snaps, the batch endpoints, the media endpoints and the editor document endpoints return the object with no wrapper. GET /v1/media returns a flat Laravel paginator.
+
+        Note: A layer has no `type` field. `available_modifications` maps each override key to its current value, and a layer with no override returns an empty array `[]`.
+
+        Note: `size` is the canvas size preset the template is stored under, the same value POST /v1/templates returns. It reads `custom` when the dimensions match no preset. GET /v1/templates/sizes lists every preset.
+
+        Note: `published_version` is the version number snaps and previews render. It is null until you publish the template.
+
+        Note: `has_unpublished_edits` is true when the draft is not the same as the published version. A layer edit, a resize and an editor-document edit all set it. Call POST /v1/templates/{templateUuid}/publish to make the draft render.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The template.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Template'
+              example:
+                data:
+                  uuid: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                  title: 'Template 1'
+                  size: open_graph
+                  width: 1200
+                  height: 630
+                  layers:
+                    -
+                      layer: review_poster
+                      available_modifications:
+                        image_url: 'https://app.example.com/crazy-doc-brown-jailed'
+                    -
+                      layer: review_title
+                      available_modifications:
+                        text: 'The worst Time-Travel movie ever made'
+                    -
+                      layer: frame
+                      available_modifications: []
+                  published_version: 2
+                  has_unpublished_edits: true
+                  created_at: '2026-05-01T12:00:00Z'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/templates/{templateIdentifier}':
+    patch:
+      tags:
+        - Templates
+      operationId: templates_update
+      summary: 'Update a template'
+      description: |-
+        Updates a template. It renders a new preview image only when `layers`, `groups`, `width` or `height` changes, or when the template has no preview. A repeat of the same request, or a change to the title only, keeps the preview image and its URL. The path segment accepts the template UUID or the numeric template ID. GET /v1/templates returns the UUID.
+
+        Note: `data` holds the same six fields POST /v1/templates returns. It is a new key, so a client that reads `message` still works.
+
+        Note: Read `data.size`, `data.width` and `data.height` after the write. A body that sends `size` sets the dimensions, and a body that sends the dimensions sets `size`.
+
+        Note: The preview render runs before the save. If the render fails, the request answers 500 and saves nothing. Send the same request again.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateIdentifier
+          in: path
+          required: true
+          description: 'Template UUID or numeric template ID, scoped to your company. A value of only digits reads the numeric ID. Every other value reads the UUID.'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  description: 'Template name. Rules: required|string|max:255.'
+                size:
+                  type: string
+                  description: 'Canvas size preset, for example "instagram_story" or "youtube_thumbnail". It sets width and height for you. GET /v1/templates/sizes lists every preset. Rules: nullable|in:<preset>.'
+                width:
+                  type: integer
+                  description: 'Canvas width in pixels. Ignored when you send a size preset. Rules: nullable|numeric|min:1|max:4000.'
+                height:
+                  type: integer
+                  description: 'Canvas height in pixels. Ignored when you send a size preset. Rules: nullable|numeric|min:1|max:4000.'
+                layers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/LayerDefinition'
+                  description: 'Layer objects; stored JSON-encoded. Rules: nullable|array, each layer needs a unique key and a properties array.'
+                groups:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - id
+                    properties:
+                      id:
+                        type: string
+                        maxLength: 64
+                      name:
+                        type: string
+                        nullable: true
+                        maxLength: 255
+                      visible:
+                        type: boolean
+                      collapsed:
+                        type: boolean
+                      order:
+                        type: integer
+                  description: 'Editor layer groups, in the shape that the editor saves. Send null to remove the groups. Rules: nullable|array, each group needs an id.'
+              required:
+                - title
+            example:
+              title: 'Updated title'
+      responses:
+        200:
+          description: 'Template updated.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - message
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TemplateSummary'
+                  message:
+                    type: string
+              example:
+                data:
+                  uuid: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                  title: 'Updated title'
+                  size: open_graph
+                  width: 1200
+                  height: 630
+                  created_at: '2026-05-01T12:00:00Z'
+                message: 'Template updated successfully'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to change templates of this company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        409:
+          description: 'The template uses the v2 editor document. This route cannot edit it. Use PATCH or PUT /v1/templates/{templateUuid}/document. Nothing was saved.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - code
+                  - message
+                properties:
+                  code:
+                    type: string
+                    enum:
+                      - legacy_edit_rejected_for_v2
+                  message:
+                    type: string
+              example:
+                code: legacy_edit_rejected_for_v2
+                message: 'This template has a v2 editor document, so this route cannot change it. Read GET /v1/templates/{templateUuid}/document, then send PATCH or PUT /v1/templates/{templateUuid}/document with its revision.'
+        422:
+          description: 'A field failed a rule.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The title field is required.'
+                errors:
+                  title:
+                    - 'The title field is required.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+    delete:
+      tags:
+        - Templates
+      operationId: templates_destroy
+      summary: 'Delete a template'
+      description: |-
+        Deletes a template. The path segment accepts the template UUID or the numeric template ID. GET /v1/templates returns the UUID. Requires the delete-template policy. The delete also removes the snaps, the images, the versions and the forms of the template, and removes the template from its collections. You cannot undo it.
+
+        Gates: policy:delete,Template.
+
+        Note: This body carries no `data` key. The other template endpoints hold one, and a delete is the exemption: the template is gone, so there is no resource to return.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateIdentifier
+          in: path
+          required: true
+          description: 'Template UUID or numeric template ID, scoped to your company. A value of only digits reads the numeric ID. Every other value reads the UUID.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'Template deleted.'
+          content:
+            application/json:
+              example:
+                message: 'Template deleted successfully'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to change templates of this company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/templates/{templateUuid}/publish':
+    post:
+      tags:
+        - Templates
+      operationId: templates_publish
+      summary: 'Publish a template'
+      description: |-
+        Publishes the current draft of a template as a new immutable version and returns that version number. Snaps and previews render the published version, so an edit takes effect only after this call. The call is safe to repeat: a draft with no new edits returns the version which is already live and creates no second version.
+
+        Gates: policy:update,Template.
+
+        Note: BREAKING CHANGE. The response fields moved under a `data` key. Read `data.published_version`, not `published_version`.
+
+        Note: `data.id` is deprecated. It repeats the value of `data.uuid`, which is the name every other template field uses. Read `data.uuid`. `data.id` stays until a major version removes it.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template whose draft you want to publish.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The published version.'
+          content:
+            application/json:
+              example:
+                data:
+                  id: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                  uuid: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                  published_version: 2
+                message: 'Template published. New snaps and previews now render this version.'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to change templates of this company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/templates/{templateUuid}/document':
+    get:
+      tags:
+        - 'Editor documents'
+      operationId: editor_documents_show
+      summary: 'Get the editor document'
+      description: |-
+        Returns the stored v2 editor document and its revision. A template with no draft returns a null document and revision 0. Read this before every write.
+
+        Gates: throttle:editor-document.
+
+        Note: The read gate and the write gate name the same people. Every account in your company that can write the document can also read it.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The document and its revision.'
+          content:
+            application/json:
+              example:
+                document:
+                  version: 2
+                  layers:
+                    -
+                      key: headline
+                      type: text
+                      properties:
+                        -
+                          name: fontWeight
+                          value: 700
+                  groups: []
+                revision: 4
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to read templates.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+    patch:
+      tags:
+        - 'Editor documents'
+      operationId: editor_documents_apply
+      summary: 'Apply editor operations'
+      description: |-
+        Applies a closed list of layer operations and saves the result under the next revision. `set_layer_property` takes `layer_key`, `property` and `value`. `set_layer_type` takes `layer_key` and `type`. Every operation in one call applies together, or none of them applies.
+
+        Gates: throttle:editor-document.
+
+        Note: A rejected operation returns a stable `code`, for example `editor_operation_layer_not_found` or `editor_operation_invalid_value`. Correct the operation and call again.
+
+        Note: A malformed body returns the standard validation shape instead, with a message under `errors.revision` or `errors.operations`.
+
+        Note: The route allows 30 calls a minute for one token and 180 a minute for one company.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template.'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revision:
+                  type: integer
+                  description: 'The revision the last read returned. Rules: required|integer|min:0.'
+                operations:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - operation
+                      - layer_key
+                    properties:
+                      operation:
+                        type: string
+                        enum:
+                          - set_layer_property
+                          - set_layer_type
+                      layer_key:
+                        type: string
+                      property:
+                        type: string
+                        description: 'set_layer_property only.'
+                      value:
+                        description: 'set_layer_property only. Any JSON value that the property accepts.'
+                      type:
+                        type: string
+                        description: 'set_layer_type only.'
+                  description: 'One to 100 operation objects, applied in order. Rules: required|array|max:100.'
+              required:
+                - revision
+                - operations
+            example:
+              revision: 4
+              operations:
+                -
+                  operation: set_layer_property
+                  layer_key: headline
+                  property: fontWeight
+                  value: 700
+      responses:
+        200:
+          description: 'The saved document and its new revision.'
+          content:
+            application/json:
+              example:
+                document:
+                  version: 2
+                  layers:
+                    -
+                      key: headline
+                      type: text
+                      properties:
+                        -
+                          name: fontWeight
+                          value: 700
+                  groups: []
+                revision: 5
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to change templates of this company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        409:
+          description: 'The stored revision moved. Nothing was saved.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditorDocumentConflict'
+              example:
+                code: editor_document_conflict
+                message: 'The document changed since you read it, so nothing was saved. Apply your change to `current_document`, then send it again with `current_revision`.'
+                current_revision: 5
+                current_document:
+                  version: 2
+                  layers: []
+                  groups: []
+        422:
+          description: 'The body is malformed, or the document rejects an operation.'
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    $ref: '#/components/schemas/EditorOperationError'
+                  -
+                    $ref: '#/components/schemas/ValidationError'
+              example:
+                code: editor_operation_layer_not_found
+                message: 'No layer has this `layer_key`. Read GET /v1/templates/{templateUuid}/document and use the `key` of a layer.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+    put:
+      tags:
+        - 'Editor documents'
+      operationId: editor_documents_update
+      summary: 'Replace the editor document'
+      description: |-
+        Replaces the whole v2 editor document and saves it under the next revision. Send the document you read, with your change applied to it. Any layer or property you leave out is gone. Prefer `PATCH` unless you rebuild the document.
+
+        Gates: throttle:editor-document.
+
+        Note: The document is bounded: 262144 bytes, 1000 nodes, depth 12, and 16384 characters for one string. A document over a limit returns `editor_document_too_large` or `editor_document_budget_exceeded` under `errors.document`.
+
+        Note: The route allows 30 calls a minute for one token and 180 a minute for one company.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template.'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revision:
+                  type: integer
+                  description: 'The revision the last read returned. Rules: required|integer|min:0.'
+                document:
+                  type: object
+                  description: 'The complete v2 document, with `layers` and `groups`. Rules: required|array.'
+              required:
+                - revision
+                - document
+            example:
+              revision: 4
+              document:
+                version: 2
+                layers: []
+                groups: []
+      responses:
+        200:
+          description: 'The saved document and its new revision.'
+          content:
+            application/json:
+              example:
+                document:
+                  version: 2
+                  layers: []
+                  groups: []
+                revision: 5
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to change templates of this company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        409:
+          description: 'The stored revision moved. Nothing was saved.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditorDocumentConflict'
+              example:
+                code: editor_document_conflict
+                message: 'The document changed since you read it, so nothing was saved. Apply your change to `current_document`, then send it again with `current_revision`.'
+                current_revision: 5
+                current_document:
+                  version: 2
+                  layers: []
+                  groups: []
+        422:
+          description: 'The body is malformed, or the document breaks a limit.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The given data was invalid.'
+                errors:
+                  document:
+                    - editor_document_too_large
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/templates/{templateUuid}/document/preflight':
+    get:
+      tags:
+        - 'Editor documents'
+      operationId: editor_documents_preflight
+      summary: 'Inspect the editor document'
+      description: |-
+        Reads the stored document and returns the known draft problems it carries, each with a code, a JSON pointer and a message. An empty `issues` list means the known checks pass. It does not guarantee that the render looks right.
+
+        Gates: throttle:editor-document.
+
+        Note: Run it after the last write and before you publish the template.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The issues and the revision they were read from.'
+          content:
+            application/json:
+              example:
+                issues:
+                  -
+                    code: image_asset_missing
+                    path: /layers/0/source
+                    message: 'Image layers require a pinned asset id.'
+                revision: 4
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or your account is not allowed to read templates.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/media:
+    get:
+      tags:
+        - Media
+      operationId: media_index
+      summary: 'List media'
+      description: |-
+        Returns your uploaded images, 12 per page, newest first.
+
+        Note: The body is a flat Laravel paginator. The page fields sit next to `data`, and there is no `meta` key.
+
+        Note: Each item holds the documented Media fields only. Read `src` for the URL to use as an `image_url` variant.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: page
+          in: query
+          required: false
+          description: 'Page number for the standard paginator.'
+          schema:
+            type: integer
+          example: 1
+      responses:
+        200:
+          description: 'A page of media, as a flat Laravel paginator.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaPage'
+              example:
+                current_page: 1
+                data:
+                  -
+                    id: 12
+                    uuid: 0d4c3a1e-5b2f-4e8a-9c7d-1f2e3a4b5c6d
+                    name: logo
+                    file_name: 7b0e4c2a-91d3-4f6e-8a5b-2c1d9e3f4a6b.png
+                    mime_type: image/png
+                    size: 20480
+                    original_url: 'https://app.example.com/storage/12/7b0e4c2a-91d3-4f6e-8a5b-2c1d9e3f4a6b.png'
+                    src: 'https://app.example.com/storage/12/conversions/7b0e4c2a-91d3-4f6e-8a5b-2c1d9e3f4a6b-image.jpg'
+                    created_at: '2026-05-01T12:00:00.000000Z'
+                first_page_url: 'https://app.example.com/api/v1/media?page=1'
+                from: 1
+                last_page: 1
+                last_page_url: 'https://app.example.com/api/v1/media?page=1'
+                links:
+                  -
+                    url: null
+                    label: '&laquo; Previous'
+                    active: false
+                  -
+                    url: 'https://app.example.com/api/v1/media?page=1'
+                    label: '1'
+                    active: true
+                  -
+                    url: null
+                    label: 'Next &raquo;'
+                    active: false
+                next_page_url: null
+                path: 'https://app.example.com/api/v1/media'
+                per_page: 12
+                prev_page_url: null
+                to: 1
+                total: 1
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+    post:
+      tags:
+        - Media
+      operationId: media_store
+      summary: 'Upload media'
+      description: 'Uploads an image into your media library. Send as multipart/form-data. The server stores the file under a random name with the extension of the detected image type. `name` keeps the original name.'
+      security:
+        -
+          bearerToken: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 'The image to upload. SVG is not accepted. Rules: required, file, mimes:jpg,jpeg,png,gif,webp,bmp, extensions:jpg,jpeg,png,gif,webp,bmp, max:10240.'
+              required:
+                - file
+      responses:
+        200:
+          description: 'Media uploaded. The body is the media record with no `data` wrapper.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Media'
+              example:
+                id: 12
+                uuid: 0d4c3a1e-5b2f-4e8a-9c7d-1f2e3a4b5c6d
+                name: logo
+                file_name: 7b0e4c2a-91d3-4f6e-8a5b-2c1d9e3f4a6b.png
+                mime_type: image/png
+                size: 20480
+                original_url: 'https://app.example.com/storage/12/7b0e4c2a-91d3-4f6e-8a5b-2c1d9e3f4a6b.png'
+                src: 'https://app.example.com/storage/12/conversions/7b0e4c2a-91d3-4f6e-8a5b-2c1d9e3f4a6b-image.jpg'
+                created_at: '2026-05-01T12:00:00.000000Z'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        422:
+          description: 'File missing, not a supported image type, or larger than 10 MB.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The file field must be a file of type: jpg, jpeg, png, gif, webp, bmp.'
+                errors:
+                  file:
+                    - 'The file field must be a file of type: jpg, jpeg, png, gif, webp, bmp.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/screenshots:
+    get:
+      tags:
+        - Screenshots
+      operationId: screenshots_index
+      summary: 'List screenshots'
+      description: |-
+        Returns a cursor-paginated list of your screenshots.
+
+        Gates: logApiRequest.
+
+        Note: A list item names its id `uuid`. GET /v1/screenshots/{screenshotUuid} and POST /v1/screenshots name the same value `id`.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: cursor
+          in: query
+          required: false
+          description: 'Cursor token from meta.next_cursor.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'A page of screenshots. Each item names its id `uuid`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScreenshotListItem'
+                  meta:
+                    $ref: '#/components/schemas/CursorMeta'
+              example:
+                data:
+                  -
+                    uuid: a1b2c3
+                    url: 'https://example.com'
+                    image_url: 'https://app.example.com/storage/screenshots/a1b2c3.png'
+                    width: 1330
+                    height: 780
+                    created_at: '2026-05-01T12:00:00Z'
+                meta:
+                  previous_cursor: null
+                  next_cursor: null
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        422:
+          description: 'A query parameter failed a rule.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The cursor must be a string.'
+                errors:
+                  cursor:
+                    - 'The cursor must be a string.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+    post:
+      tags:
+        - Screenshots
+      operationId: screenshots_store
+      summary: 'Create a screenshot'
+      description: |-
+        Captures a web page. Defaults to a 1330x780 viewport when width/height are omitted.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  description: 'Page to capture. Rules: required, url.'
+                width:
+                  type: integer
+                  description: 'Viewport width, from 1 to 4000. Defaults to 1330. Rules: integer, min:1, max:4000.'
+                height:
+                  type: integer
+                  description: 'Viewport height, from 1 to 4000. Defaults to 780. Rules: integer, min:1, max:4000.'
+              required:
+                - url
+            example:
+              url: 'https://example.com'
+              width: 1330
+              height: 780
+      responses:
+        200:
+          description: 'Screenshot created. The id field is `id`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Screenshot'
+              example:
+                data:
+                  id: a1b2c3
+                  url: 'https://example.com'
+                  image_url: 'https://app.example.com/storage/screenshots/a1b2c3.png'
+                  width: 1330
+                  height: 780
+                  created_at: '2026-05-01T12:00:00Z'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        422:
+          description: 'A field failed a rule.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The width must be at least 1.'
+                errors:
+                  width:
+                    - 'The width must be at least 1.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/screenshots/{screenshotUuid}':
+    get:
+      tags:
+        - Screenshots
+      operationId: screenshots_show
+      summary: 'Get a screenshot'
+      description: |-
+        Returns a single screenshot.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: screenshotUuid
+          in: path
+          required: true
+          description: 'UUID of the screenshot.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The screenshot. The id field is `id`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Screenshot'
+              example:
+                data:
+                  id: a1b2c3
+                  url: 'https://example.com'
+                  image_url: 'https://app.example.com/storage/screenshots/a1b2c3.png'
+                  width: 1330
+                  height: 780
+                  created_at: '2026-05-01T12:00:00Z'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'Screenshot not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Screenshot].'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/snaps:
+    post:
+      tags:
+        - Snaps
+      operationId: snaps_store
+      summary: 'Create a snap'
+      description: |-
+        Renders a snap from a single template (`template_id`) or every template in a collection (`collection_id`). Provide exactly one of the two.
+
+        Synchronous (default): the response carries the finished `media_url` and returns 201.
+
+        Asynchronous (`async: true`): the snap is queued, the response returns 202 immediately, and the result is delivered to `webhook_url`. The webhook body is `{"event": ..., "snap": {...}}`. The event is `snap.completed` when the render succeeds, or `snap.failed` when it fails. A failed snap has `status: failed` and `last_error: render_failed`.
+
+        The API always renders the template's **published** version. Unpublished draft edits are not visible to the API until the template is published.
+
+        Gates: logApiRequest.
+
+        Note: Every response carries an `X-Request-Uuid` header. Quote it in support tickets.
+
+        Note: A collection request returns an array of snap objects, one per template.
+
+        Note: A response to a repeated `idempotency_key` carries an `X-Idempotent-Replay: true` header and renders nothing.
+
+        Note: `webhook_url` must be a public address. A host that resolves to a private, loopback, link-local or reserved range is rejected with 422.
+
+        Note: Each webhook carries three headers: `X-Snapsbrew-Delivery` (one ID for all attempts of a delivery), `X-Snapsbrew-Timestamp` (Unix seconds) and `X-Snapsbrew-Signature`. The signature is the HMAC-SHA256 hex digest of `{timestamp}.{raw body}` with the webhook signing secret of your company (**Account > Developers**). Compare it in constant time, and reject a timestamp that is more than five minutes old.
+
+        Note: An `idempotency_key` is honored for 24 hours. After that window a retry is a new request and renders a new snap.
+      security:
+        -
+          bearerToken: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                template_id:
+                  type: string
+                  description: 'UUID of a single template to render. Rules: required_without:collection_id, prohibits:collection_id, exists templates.uuid scoped to company.'
+                collection_id:
+                  type: string
+                  description: 'UUID of a collection; one snap is rendered per template. Rules: required_without:template_id, prohibits:template_id, exists template_collections.uuid scoped to company.'
+                type:
+                  type: string
+                  description: 'Output type. Defaults to image. Rules: nullable, in:image,pdf.'
+                format:
+                  type: string
+                  description: 'Image output format (image type only). Defaults to png. Rules: sometimes, in:png,jpeg,webp.'
+                transparent:
+                  type: boolean
+                  description: 'Render on a transparent background. Valid for png and webp only; jpeg + transparent returns 422. Rules: sometimes, boolean; rejected with png-only/webp-only — 422 when combined with format=jpeg.'
+                async:
+                  type: boolean
+                  description: 'Queue the render and return 202. Rules: sometimes, boolean.'
+                webhook_url:
+                  type: string
+                  description: 'Callback URL invoked when an async snap completes. The address must be public. A host that resolves to a private, loopback, link-local or reserved range is rejected with 422. The callback does not follow a redirect. The app checks the address again when it sends the callback, and connects to the address that it checked. If delivery fails, `last_error` holds a code: `webhook_address_refused`, `webhook_redirect_refused`, `webhook_unreachable` or `webhook_http_<status>`. Rules: url, required_if:async,true, must be a public http or https address.'
+                variants:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Variant'
+                  description: 'Per-layer content overrides applied to the render. Each item is one Variant object: a layer key and one override. Rules: nullable, array; image_url must be a public http or https URL, background_color must be a CSS color, barcode_content max:1000.'
+                idempotency_key:
+                  type: string
+                  description: 'Send the same key when you retry after a timeout. The retry returns the same snap and does not render it again. Keys are honored for 24 hours and are scoped to your account. Not supported with collection_id. Rules: sometimes, nullable, string, max:191, letters/digits/underscore/hyphen only, prohibits:collection_id.'
+            example:
+              template_id: '<uuid>'
+              type: image
+              variants:
+                -
+                  layer: review_title
+                  text: 'Hello world'
+      responses:
+        201:
+          description: 'Synchronous snap rendered. The body is the snap with no `data` wrapper. A collection request returns an array of snaps.'
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    $ref: '#/components/schemas/Snap'
+                  -
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Snap'
+              example:
+                id: 9f1c2d3e
+                media_url: 'https://app.example.com/storage/snaps/9f1c2d3e.png'
+                width: 1200
+                height: 630
+                type: image
+                status: completed
+                is_async: false
+                webhook_url: null
+                completed_at: '2026-05-01T12:00:03Z'
+                last_error: null
+                variants: []
+                template_id: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                template_title: 'Launch card'
+                created_at: '2026-05-01T12:00:00Z'
+        202:
+          description: 'Asynchronous snap queued. The body is the snap with no `data` wrapper. A collection request returns an array of snaps.'
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    $ref: '#/components/schemas/Snap'
+                  -
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Snap'
+              example:
+                id: 9f1c2d3e
+                media_url: ''
+                width: 1200
+                height: 630
+                type: image
+                status: pending
+                is_async: true
+                webhook_url: 'https://example.com/hooks/snap'
+                completed_at: null
+                last_error: null
+                variants: []
+                template_id: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+                template_title: 'Launch card'
+                created_at: '2026-05-01T12:00:00Z'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability, or a permission check refused the request.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'This action is unauthorized.'
+        404:
+          description: 'The collection holds no templates.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: "The collection doesn't have any templates."
+        409:
+          description: 'The idempotency_key cannot be used. Read `code`: `idempotency_key_in_progress` means another request holds the key, so retry with the same key. `idempotency_key_belongs_to_batch` means a batch owns the key, so send a new key. Nothing was created.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - code
+                properties:
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                      - idempotency_key_in_progress
+                      - idempotency_key_belongs_to_batch
+              example:
+                message: 'A request with this idempotency_key is already in progress. Retry in a moment. Nothing was created and nothing was charged.'
+                code: idempotency_key_in_progress
+        422:
+          description: 'Validation failed. A `template_id` or `collection_id` that does not exist in your company fails the `exists` rule, so it returns 422 with a message under `errors.template_id` or `errors.collection_id`, not 404.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The selected template id is invalid.'
+                errors:
+                  template_id:
+                    - 'The selected template id is invalid.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+        500:
+          description: 'An unexpected error stopped the request. The body holds a fixed message and the code `internal_error`, and no detail of the cause. The server logs the cause.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+              example:
+                message: 'The server could not create the snap. Try again later. If the error continues, contact support and give the X-Request-Uuid header of this response.'
+                code: internal_error
+  /v1/snaps/batches:
+    post:
+      tags:
+        - 'Snap batches'
+      operationId: snap_batches_store
+      summary: 'Create a batch of snaps'
+      description: |-
+        Renders up to 100 snaps from one template. Every item carries its own `variants` and an optional `identifier` you use to recognize it in the result.
+
+        The response is always 202. Each item renders in the background.
+
+        `type`, `format` and `transparent` apply to every item in the batch. An item that needs a different format belongs in a different batch.
+
+        The API always renders the template's **published** version.
+
+        Gates: logApiRequest.
+
+        Note: Over 100 items returns 422 on `errors.items` and creates nothing. The request is never truncated in silence.
+
+        Note: Exactly one webhook is posted, when the batch finishes. There is no per-item webhook on this endpoint.
+
+        Note: Each webhook carries three headers: `X-Snapsbrew-Delivery` (one ID for all attempts of a delivery), `X-Snapsbrew-Timestamp` (Unix seconds) and `X-Snapsbrew-Signature`. The signature is the HMAC-SHA256 hex digest of `{timestamp}.{raw body}` with the webhook signing secret of your company (**Account > Developers**). Compare it in constant time, and reject a timestamp that is more than five minutes old.
+
+        Note: `webhook_url` must be a public address. A host that resolves to a private, loopback, link-local or reserved range is rejected with 422.
+
+        Note: A response to a repeated `idempotency_key` carries an `X-Idempotent-Replay: true` header.
+
+        Note: Every response carries an `X-Request-Uuid` header. Quote it in support tickets.
+
+        Note: A batch holds one of five statuses. `pending` and `processing` mean it is still running. The three terminal statuses are `completed`, `failed` and `canceled`, and a batch never leaves one. `completed` means the batch ran to the end and at least one item rendered, so read the `failed` count as well as the status. `failed` means zero items rendered. At every terminal status `completed + failed + canceled` equals `total_rows`.
+      security:
+        -
+          bearerToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                template_id:
+                  type: string
+                  description: 'UUID of the template every item renders from. Rules: required, exists templates.uuid scoped to company.'
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        nullable: true
+                        maxLength: 191
+                        description: 'Your own name for this item.'
+                      variants:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Variant'
+                        description: 'Per-layer content overrides for this item.'
+                  description: 'One object per snap. Over 100 entries returns 422 and creates nothing. Rules: required, array, min:1, max:100.'
+                title:
+                  type: string
+                  description: 'A name for the batch, shown in the account. Defaults to "API batch". Rules: sometimes, string, max:255.'
+                webhook_url:
+                  type: string
+                  description: 'ONE request is posted to this address when the batch finishes. A host that resolves to a private, loopback, link-local or reserved range is rejected with 422. Rules: nullable, url, max:2048, must be a public http or https address.'
+                type:
+                  type: string
+                  description: 'Output type for every item. Defaults to image. Rules: sometimes, in:image,pdf.'
+                format:
+                  type: string
+                  description: 'Image output format for every item. Defaults to png. Rules: sometimes, in:png,jpeg,webp.'
+                transparent:
+                  type: boolean
+                  description: 'Render every item on a transparent background. Valid for png and webp only. Rules: sometimes, boolean; 422 when combined with format=jpeg.'
+                idempotency_key:
+                  type: string
+                  description: 'Send the same key when you retry after a timeout. The retry returns the same batch and starts no second one. Keys are honored for 24 hours and are scoped to your account. A key already used by POST /v1/snaps returns 409. Rules: sometimes, nullable, string, max:191, letters/digits/underscore/hyphen only.'
+              required:
+                - template_id
+                - items
+            example:
+              template_id: '<uuid>'
+              title: 'October launch'
+              items:
+                -
+                  identifier: row-1
+                  variants:
+                    -
+                      layer: headline
+                      text: Hello
+                -
+                  identifier: row-2
+                  variants:
+                    -
+                      layer: headline
+                      text: World
+      responses:
+        202:
+          description: 'Batch accepted and queued. The body is the batch with no `data` wrapper.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+              example:
+                uuid: 7c1f2a9e-0b44-4a1e-9f2b-5d3c8e1a7b60
+                title: 'October launch'
+                status: processing
+                total_rows: 3
+                processed_rows: 0
+                completed: 0
+                pending: 3
+                failed: 0
+                canceled: 0
+                status_url: 'https://app.example.com/api/v1/snaps/batches/7c1f2a9e-0b44-4a1e-9f2b-5d3c8e1a7b60'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        409:
+          description: 'The idempotency_key cannot be used. Read `code`: `idempotency_key_in_progress` means another request holds the key, so retry with the same key. `idempotency_key_belongs_to_snap` means a single snap owns the key, so send a new key. Nothing was created.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - code
+                properties:
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                      - idempotency_key_in_progress
+                      - idempotency_key_belongs_to_snap
+              example:
+                message: 'This idempotency_key already belongs to a single snap. Use a new key for a batch.'
+                code: idempotency_key_belongs_to_snap
+        422:
+          description: 'Validation failed. A `template_id` that does not exist in your company returns 422 under `errors.template_id`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'A batch accepts at most 100 items. Split the request into smaller batches.'
+                errors:
+                  items:
+                    - 'A batch accepts at most 100 items. Split the request into smaller batches.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+        500:
+          description: 'An unexpected error stopped the request. The body holds a fixed message and the code `internal_error`, and no detail of the cause. The server logs the cause.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+              example:
+                message: 'The server could not create the batch. Try again later. If the error continues, contact support and give the X-Request-Uuid header of this response.'
+                code: internal_error
+  '/v1/snaps/batches/{batchUuid}':
+    get:
+      tags:
+        - 'Snap batches'
+      operationId: snap_batches_show
+      summary: 'Read a batch'
+      description: |-
+        Returns the counts and every item with its status and image URL. Poll this about every 5 seconds and stop when `status` is `completed`, `failed` or `canceled`.
+
+        Gates: logApiRequest.
+
+        Note: A batch holds one of five statuses. `pending` and `processing` mean it is still running. The three terminal statuses are `completed`, `failed` and `canceled`, and a batch never leaves one. `completed` means the batch ran to the end and at least one item rendered, so read the `failed` count as well as the status. `failed` means zero items rendered. At every terminal status `completed + failed + canceled` equals `total_rows`.
+
+        Note: `media_url` is the image URL on an item with status `completed`, and null on each other item. The snap object of POST /v1/snaps uses an empty string for the same state.
+
+        Note: `last_error` on a failed item holds the fixed code `render_failed`. It never holds the message of the renderer.
+
+        Note: A batch id that belongs to another account returns 404, the same as an id that does not exist.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: batchUuid
+          in: path
+          required: true
+          description: 'The batch id returned by POST /v1/snaps/batches.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The batch and its items, with no `data` wrapper.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+              example:
+                uuid: 7c1f2a9e-0b44-4a1e-9f2b-5d3c8e1a7b60
+                title: 'October launch'
+                status: completed
+                total_rows: 2
+                processed_rows: 2
+                completed: 1
+                pending: 0
+                failed: 1
+                canceled: 0
+                status_url: 'https://app.example.com/api/v1/snaps/batches/7c1f2a9e-0b44-4a1e-9f2b-5d3c8e1a7b60'
+                items:
+                  -
+                    id: 9f1c2d3e
+                    identifier: row-1
+                    status: completed
+                    media_url: 'https://app.example.com/storage/snaps/9f1c2d3e.png'
+                    last_error: null
+                  -
+                    id: 4b8a7c6d
+                    identifier: row-2
+                    status: failed
+                    media_url: null
+                    last_error: render_failed
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'No batch with that id exists in your account.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No batch with that id exists in your account.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/snaps/batches/{batchUuid}/cancel':
+    post:
+      tags:
+        - 'Snap batches'
+      operationId: snap_batches_cancel
+      summary: 'Cancel a batch'
+      description: |-
+        Stops a batch that is still running.
+
+        An item that already rendered keeps its image. An item that had not started is marked `canceled` and never renders. An item that is rendering at that moment can still finish.
+
+        This cannot be undone. A canceled batch cannot be resumed. Start a new batch for the items you still want.
+
+        Gates: logApiRequest.
+
+        Note: Canceling twice is safe. A batch that already holds a terminal status is returned unchanged.
+
+        Note: One webhook is posted, carrying `event: snap-import.canceled`.
+
+        Note: An item that is rendering when the cancel lands can still complete. The counts in the response are the truth at that moment.
+
+        Note: A batch id that belongs to another account returns 404, the same as an id that does not exist.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: batchUuid
+          in: path
+          required: true
+          description: 'The batch id returned by POST /v1/snaps/batches.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'The batch after the cancel, with its items and no `data` wrapper.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Batch'
+              example:
+                uuid: 7c1f2a9e-0b44-4a1e-9f2b-5d3c8e1a7b60
+                title: 'October launch'
+                status: canceled
+                total_rows: 3
+                processed_rows: 3
+                completed: 1
+                pending: 0
+                failed: 0
+                canceled: 2
+                status_url: 'https://app.example.com/api/v1/snaps/batches/7c1f2a9e-0b44-4a1e-9f2b-5d3c8e1a7b60'
+                items:
+                  -
+                    id: 9f1c2d3e
+                    identifier: row-1
+                    status: completed
+                    media_url: 'https://app.example.com/storage/snaps/9f1c2d3e.png'
+                    last_error: null
+                  -
+                    id: 4b8a7c6d
+                    identifier: row-2
+                    status: canceled
+                    media_url: null
+                    last_error: null
+                  -
+                    id: 2e5f9a1b
+                    identifier: row-3
+                    status: canceled
+                    media_url: null
+                    last_error: null
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'No batch with that id exists in your account.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No batch with that id exists in your account.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/templates/{templateUuid}/preview':
+    get:
+      tags:
+        - Preview
+      operationId: preview_template
+      summary: 'Preview a template'
+      description: |-
+        Renders a watermarked preview of a template using its default layer content, or with `variants` applied. Returns a self-contained HTML document (text/html).
+
+        Gates: throttle:preview.
+
+        Note: The preview is watermarked HTML, not a usable final asset.
+
+        Note: No snap is stored.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template to preview.'
+          schema:
+            type: string
+        -
+          name: variants
+          in: query
+          required: false
+          description: 'Per-layer overrides in PHP query syntax, for example variants[0][layer]=headline&variants[0][text]=Hello. Each item targets a layer key with one of text, image_url (public URL), background_color, qr_content, barcode_content, or hidden.'
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Variant'
+          style: deepObject
+          explode: true
+      responses:
+        200:
+          description: 'Watermarked HTML preview.'
+          content:
+            text/html:
+              schema:
+                type: string
+              example: '<!DOCTYPE html>…watermarked preview…</html>'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'Template not found in your account.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        422:
+          description: 'Validation failed, for example an image_url that is not public.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The variants.0.image_url must be a public http or https URL and may not point to an internal or reserved address.'
+                errors:
+                  variants.0.image_url:
+                    - 'The variants.0.image_url must be a public http or https URL and may not point to an internal or reserved address.'
+        429:
+          description: 'Rate limit exceeded. A preview allows 10 requests per minute for one user, inside the 60 per minute of the api group.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /v1/snaps/preview:
+    get:
+      tags:
+        - Preview
+      operationId: preview_snap
+      summary: 'Preview a snap'
+      description: |-
+        Renders a watermarked preview of the snap you intend to create — a template (`template_id`) plus `variants`. Returns a self-contained HTML document (text/html). Pass the same template_id and variants to POST /v1/snaps to create the final snap.
+
+        Gates: throttle:preview.
+
+        Note: The preview is watermarked HTML, not a usable final asset.
+
+        Note: No snap is stored.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: template_id
+          in: query
+          required: true
+          description: 'UUID of the template to render.'
+          schema:
+            type: string
+        -
+          name: variants
+          in: query
+          required: false
+          description: 'Per-layer overrides in PHP query syntax, for example variants[0][layer]=headline&variants[0][text]=Hello. Each item targets a layer key with one of text, image_url (public URL), background_color, qr_content, barcode_content, or hidden.'
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Variant'
+          style: deepObject
+          explode: true
+      responses:
+        200:
+          description: 'Watermarked HTML preview.'
+          content:
+            text/html:
+              schema:
+                type: string
+              example: '<!DOCTYPE html>…watermarked preview…</html>'
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'Template not found in your account.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        422:
+          description: 'Validation failed.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The template id field is required.'
+                errors:
+                  template_id:
+                    - 'The template id field is required.'
+        429:
+          description: 'Rate limit exceeded. A preview allows 10 requests per minute for one user, inside the 60 per minute of the api group.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  /signed-url/image.jpg:
+    get:
+      tags:
+        - 'Signed URLs'
+      operationId: signed_urls_image
+      summary: 'Render a signed URL'
+      description: |-
+        Renders the published version of a template with the variants in the URL, then redirects to the image. A repeated URL redirects to the cached image.
+
+        To sign a URL:
+        1. Take every query parameter except `signature`.
+        2. Sort the parameters by key in byte order.
+        3. Join them as `key=value` with `&`. Use the raw values, not the URL-encoded values.
+        4. Compute the HMAC-SHA256 of that string with your signing key. Use the lowercase hex digest.
+        5. Add the digest as `signature`. URL-encode every value in the final URL.
+
+        Gates: signedUrlMiddleware.
+
+        Note: This route is on the site root, not under /api. The full URL is `https://app.example.com/signed-url/image.jpg`.
+
+        Note: The signed string holds every query parameter except `signature`, including a parameter that the server does not read. Do not send `identifier` or `api_log_uuid`, because the server reserves both names.
+
+        Note: A signed URL render counts in the usage log of the template owner.
+      servers:
+        -
+          url: 'https://app.example.com'
+      parameters:
+        -
+          name: template_id
+          in: query
+          required: true
+          description: 'UUID of the template. The signing key must belong to an active user of the company that owns the template.'
+          schema:
+            type: string
+          example: 141e8454-8aa1-420a-bd0b-18a85ba949a2
+        -
+          name: variants
+          in: query
+          required: false
+          description: 'The JSON array of Variant objects, encoded as standard base64 (RFC 4648 section 4, with `+`, `/` and `=` padding). Do not use base64url: the server decodes with PHP base64_decode. Sign the base64 value, then URL-encode it in the URL.'
+          schema:
+            type: string
+          example: W3sibGF5ZXIiOiJoZWFkbGluZSIsInRleHQiOiJIZWxsbyJ9XQ==
+        -
+          name: format
+          in: query
+          required: false
+          description: 'Image format. Defaults to png. Any other value renders png. The value is part of the signature.'
+          schema:
+            type: string
+            enum:
+              - png
+              - jpeg
+              - webp
+          example: png
+        -
+          name: transparent
+          in: query
+          required: false
+          description: 'Set to 1 or true to render on a transparent background. Valid for png and webp. With format=jpeg it returns 400. The value is part of the signature.'
+          schema:
+            type: string
+            enum:
+              - '1'
+              - '0'
+              - 'true'
+              - 'false'
+          example: '0'
+        -
+          name: signature
+          in: query
+          required: true
+          description: 'Lowercase hex HMAC-SHA256 of the canonical string. See the description for the algorithm.'
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{64}$'
+          example: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      responses:
+        200:
+          description: 'The default placeholder image, with status 200. The server returns it when the signature is missing, when the signature matches no active signing key of the template owner, when the template does not exist, and when the template owner is deactivated. A bad signature does not return an error status.'
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        302:
+          description: 'The image rendered, or a cached image exists. The `Location` header holds the image URL.'
+          headers:
+            Location:
+              description: 'URL of the rendered image.'
+              schema:
+                type: string
+        400:
+          description: 'The decoded variants fail the variant rules, the URL asks for format=jpeg with transparent, or the URL has a reserved parameter (`The signed URL has a reserved parameter.`).'
+        429:
+          description: 'Too many requests from one IP address in one minute. Wait the number of seconds in `Retry-After`.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+  /v1/tags:
+    get:
+      tags:
+        - Tags
+      operationId: tags_index
+      summary: 'List tags'
+      description: |-
+        Returns up to 15 tags, ordered by name, optionally filtered by a search term.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: search
+          in: query
+          required: false
+          description: 'Case-insensitive substring match on tag name.'
+          schema:
+            type: string
+      responses:
+        200:
+          description: 'Matching tags.'
+          content:
+            application/json:
+              example:
+                data:
+                  -
+                    id: 1
+                    name: Launch
+                    slug: launch
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+    post:
+      tags:
+        - Tags
+      operationId: tags_store
+      summary: 'Create a tag'
+      description: |-
+        Creates a tag. The slug is generated from the name; collisions get a numeric suffix.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Display name of the tag. Rules: required, string, max:255.'
+              required:
+                - name
+            example:
+              name: Launch
+      responses:
+        201:
+          description: 'Tag created.'
+          content:
+            application/json:
+              example:
+                data:
+                  id: 1
+                  name: Launch
+                  slug: launch
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        422:
+          description: 'Validation failed.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The name field is required.'
+                errors:
+                  name:
+                    - 'The name field is required.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/templates/{templateUuid}/tags':
+    post:
+      tags:
+        - Tags
+      operationId: tags_template_store
+      summary: 'Sync template tags'
+      description: |-
+        Replaces all tags on a template with the supplied set. Send an empty array to clear every tag.
+
+        Gates: logApiRequest.
+      security:
+        -
+          bearerToken: []
+      parameters:
+        -
+          name: templateUuid
+          in: path
+          required: true
+          description: 'UUID of the template.'
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tag_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: 'Tag IDs to attach. Replaces the existing set. Rules: array.'
+            example:
+              tag_ids:
+                - 1
+                - 2
+      responses:
+        200:
+          description: 'Tags synced.'
+          content:
+            application/json:
+              example:
+                message: 'Tags updated successfully.'
+                tags:
+                  -
+                    id: 1
+                    name: Launch
+                    slug: launch
+        401:
+          description: 'Missing or invalid token.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: Unauthenticated.
+        403:
+          description: 'The token lacks the api_requests ability.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Invalid ability provided.'
+        404:
+          description: 'Template not found in your company.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Template].'
+        422:
+          description: 'A tag ID is invalid or not yours.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The selected tag_ids.0 is invalid.'
+                errors:
+                  tag_ids.0:
+                    - 'The selected tag_ids.0 is invalid.'
+        429:
+          description: 'Rate limit exceeded. Wait the number of seconds in `Retry-After`, then send the request again.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'Too Many Attempts.'
+  '/v1/embedded-forms/{formUuid}':
+    post:
+      tags:
+        - 'Embedded Forms'
+      operationId: embedded_forms_store
+      summary: 'Submit an embedded form'
+      description: |-
+        Renders a snap from a configured form. Template forms return one snap; collection forms return an array of snaps.
+
+        Layer keys: template forms use the plain layer key (`headline`); collection forms use `{templateUuid}__{layerKey}`. Only layers the form was configured with are accepted; the rest are dropped silently.
+
+        Gates: embeddedFormMiddleware, valid signature required.
+
+        Note: Collection forms return a bare array of snap objects, not a `data`-wrapped object.
+
+        Note: The route limits the submissions for each IP address and for each form, each minute.
+      parameters:
+        -
+          name: formUuid
+          in: path
+          required: true
+          description: 'UUID of the form.'
+          schema:
+            type: string
+        -
+          name: signature
+          in: query
+          required: true
+          description: 'Laravel URL signature. The whole URL must be signed.'
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                layers:
+                  type: object
+                  description: 'Layer overrides. Value keys by layer type: image -> image_url (file), text -> text, empty -> background_color, qr_code -> qr_content, barcode -> barcode_content. Rules: keys matched against the form configuration; an image layer takes a jpg, png, gif, webp or bmp file of 10 MB or less; a color takes a hex, rgb(a), hsl(a) or named color.'
+      responses:
+        201:
+          description: 'Snap rendered (template form). The body is the snap with no `data` wrapper.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Snap'
+              example:
+                id: 9f1c2d3e
+                media_url: 'https://app.example.com/storage/snaps/9f1c2d3e.png'
+                width: 1200
+                height: 630
+                type: image
+                status: completed
+                is_async: false
+                webhook_url: null
+                completed_at: '2026-05-01T12:00:03Z'
+                last_error: null
+                variants: []
+                template_id: '141e8454'
+                template_title: 'Launch card'
+                created_at: '2026-05-01T12:00:00Z'
+        404:
+          description: 'The form does not exist, or the signature is not valid. A bad signature returns an empty `message`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                message: 'No query results for model [App\Models\Form].'
+        422:
+          description: 'Collection form has no templates configured, or a layer value fails validation.'
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  -
+                    $ref: '#/components/schemas/Error'
+                  -
+                    $ref: '#/components/schemas/ValidationError'
+              example:
+                message: 'The form does not include any templates.'
+        429:
+          description: 'Too many submissions from one IP address or for one form. Wait the number of seconds in `Retry-After`.'
+          headers:
+            Retry-After:
+              description: 'Seconds to wait before the next request.'
+              schema:
+                type: integer
+                example: 30
+            X-RateLimit-Limit:
+              description: 'Requests allowed in the current minute.'
+              schema:
+                type: integer
+                example: 60
+            X-RateLimit-Remaining:
+              description: 'Requests left in the current minute.'
+              schema:
+                type: integer
+                example: 0
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                  - code
+                properties:
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                      - rate_limited
+              example:
+                message: 'Too many submissions. Wait one minute, then send the form again.'
+                code: rate_limited
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: 'Sanctum personal access token with the api_requests ability.'
+  schemas:
+    Variant:
+      description: 'One override for one layer: the layer key and exactly one override property. GET /v1/guides/variant-properties lists each property with an example.'
+      oneOf:
+        -
+          type: object
+          required:
+            - layer
+            - text
+          additionalProperties: false
+          properties:
+            layer:
+              type: string
+              description: 'Key of the layer to override.'
+            text:
+              type: string
+              description: "Replace a text layer's content."
+        -
+          type: object
+          required:
+            - layer
+            - image_url
+          additionalProperties: false
+          properties:
+            layer:
+              type: string
+              description: 'Key of the layer to override.'
+            image_url:
+              type: string
+              format: uri
+              description: "Swap a layer's background image. Must be a public URL — internal, reserved, and file:// addresses are rejected."
+        -
+          type: object
+          required:
+            - layer
+            - background_color
+          additionalProperties: false
+          properties:
+            layer:
+              type: string
+              description: 'Key of the layer to override.'
+            background_color:
+              type: string
+              description: 'Set a layer background color.'
+        -
+          type: object
+          required:
+            - layer
+            - qr_content
+          additionalProperties: false
+          properties:
+            layer:
+              type: string
+              description: 'Key of the layer to override.'
+            qr_content:
+              type: string
+              description: 'Set the content encoded by a QR-code layer (often a URL).'
+        -
+          type: object
+          required:
+            - layer
+            - barcode_content
+          additionalProperties: false
+          properties:
+            layer:
+              type: string
+              description: 'Key of the layer to override.'
+            barcode_content:
+              type: string
+              maxLength: 1000
+              description: "Set the value encoded by a barcode layer. Must be valid for the layer's symbology (e.g. EAN-13 needs 12-13 digits)."
+        -
+          type: object
+          required:
+            - layer
+            - hidden
+          additionalProperties: false
+          properties:
+            layer:
+              type: string
+              description: 'Key of the layer to override.'
+            hidden:
+              type: boolean
+              description: 'Drop the layer from the render entirely.'
+    LayerDefinition:
+      type: object
+      description: 'One layer in the `layers` array of a template write: a unique key and its design-time properties. GET /v1/guides/layers lists every property name and value shape.'
+      properties:
+        key:
+          type: string
+          description: 'Unique layer key. Variants target this key.'
+        type:
+          type: string
+          description: 'Editor layer type, for example text, image, qr_code, barcode or empty. Optional.'
+        properties:
+          type: array
+          items:
+            $ref: '#/components/schemas/LayerProperty'
+          description: 'Design-time properties. Send [] for none.'
+      required:
+        - key
+        - properties
+    LayerProperty:
+      type: object
+      description: 'One design-time property of a layer.'
+      properties:
+        name:
+          type: string
+          description: 'Property name, for example textContent or fontFamily.'
+        value:
+          description: 'Any JSON value. The shape depends on the property.'
+      required:
+        - name
+    Template:
+      type: object
+      description: 'One template, as GET /v1/templates/{templateUuid} returns it under `data`.'
+      properties:
+        uuid:
+          type: string
+          description: 'Stable public identifier.'
+        title:
+          type: string
+          description: 'Human-readable name.'
+        size:
+          type: string
+          nullable: true
+          description: 'Canvas size preset, or `custom`.'
+        width:
+          type: integer
+          description: 'Canvas width in pixels.'
+        height:
+          type: integer
+          description: 'Canvas height in pixels.'
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Layer'
+          description: 'Addressable layers and their modifications.'
+        published_version:
+          type: integer
+          nullable: true
+          description: 'The version that renders. Null until the first publish.'
+        has_unpublished_edits:
+          type: boolean
+          description: 'True when the draft differs from the published version.'
+        created_at:
+          type: string
+          format: date-time
+          description: 'ISO-8601 creation timestamp.'
+      required:
+        - uuid
+        - title
+        - size
+        - width
+        - height
+        - layers
+        - published_version
+        - has_unpublished_edits
+        - created_at
+      additionalProperties: false
+    TemplateListItem:
+      type: object
+      description: 'One template in the list of GET /v1/templates.'
+      properties:
+        uuid:
+          type: string
+          description: 'Stable public identifier.'
+        title:
+          type: string
+          description: 'Human-readable name.'
+        width:
+          type: integer
+          description: 'Canvas width in pixels.'
+        height:
+          type: integer
+          description: 'Canvas height in pixels.'
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Layer'
+          description: 'Addressable layers and their modifications.'
+        created_at:
+          type: string
+          format: date-time
+          description: 'ISO-8601 creation timestamp.'
+      required:
+        - uuid
+        - title
+        - width
+        - height
+        - layers
+        - created_at
+      additionalProperties: false
+    TemplateSummary:
+      type: object
+      description: 'The six fields that a template create or update returns under `data`.'
+      properties:
+        uuid:
+          type: string
+          description: 'Stable public identifier.'
+        title:
+          type: string
+          description: 'Human-readable name.'
+        size:
+          type: string
+          nullable: true
+          description: 'Canvas size preset, or `custom`.'
+        width:
+          type: integer
+          description: 'Canvas width in pixels.'
+        height:
+          type: integer
+          description: 'Canvas height in pixels.'
+        created_at:
+          type: string
+          format: date-time
+          description: 'ISO-8601 creation timestamp.'
+      required:
+        - uuid
+        - title
+        - size
+        - width
+        - height
+        - created_at
+      additionalProperties: false
+    Layer:
+      type: object
+      description: 'One addressable layer of a template, as the template endpoints return it. The response has no `type` field.'
+      properties:
+        layer:
+          type: string
+          nullable: true
+          description: 'Layer key used when overriding content.'
+        available_modifications:
+          oneOf:
+            -
+              type: object
+              minProperties: 1
+              additionalProperties:
+                type: string
+                nullable: true
+            -
+              type: array
+              maxItems: 0
+              items:
+                type: string
+          description: 'Maps each override key that this layer accepts (image_url, text, qr_content, barcode_content) to its current value. A layer with no override, for example an empty or svg layer, returns an empty array `[]`, not `{}`.'
+      required:
+        - layer
+        - available_modifications
+      additionalProperties: false
+    Screenshot:
+      type: object
+      description: 'A rendered capture of a web page, as the read and the create return it under `data`. The id field is `id`.'
+      properties:
+        id:
+          type: string
+          description: 'Screenshot UUID.'
+        url:
+          type: string
+          description: 'Captured page URL.'
+        image_url:
+          type: string
+          nullable: true
+          description: 'URL of the rendered image.'
+        width:
+          type: integer
+          description: 'Viewport width in pixels.'
+        height:
+          type: integer
+          description: 'Viewport height in pixels.'
+        created_at:
+          type: string
+          format: date-time
+          description: 'ISO-8601 creation timestamp.'
+      required:
+        - id
+        - url
+        - image_url
+        - width
+        - height
+        - created_at
+      additionalProperties: false
+    ScreenshotListItem:
+      type: object
+      description: 'One screenshot in the list of GET /v1/screenshots. The id field is `uuid`, not `id`.'
+      properties:
+        uuid:
+          type: string
+          description: 'Screenshot UUID. The same value as `id` in the read.'
+        url:
+          type: string
+          description: 'Captured page URL.'
+        image_url:
+          type: string
+          nullable: true
+          description: 'URL of the rendered image.'
+        width:
+          type: integer
+          description: 'Viewport width in pixels.'
+        height:
+          type: integer
+          description: 'Viewport height in pixels.'
+        created_at:
+          type: string
+          format: date-time
+          description: 'ISO-8601 creation timestamp.'
+      required:
+        - uuid
+        - url
+        - image_url
+        - width
+        - height
+        - created_at
+      additionalProperties: false
+    Snap:
+      type: object
+      description: 'A render job produced from a template or collection. POST /v1/snaps returns it with no `data` wrapper.'
+      properties:
+        id:
+          type: string
+          description: 'Snap UUID.'
+        media_url:
+          type: string
+          description: 'URL of the finished asset. An empty string when the snap has no finished asset: pending, processing, failed or canceled. Never null. A batch item uses null for the same state.'
+        width:
+          type: integer
+          nullable: true
+          description: 'Width in pixels of the version that rendered. Null when the snap has no source.'
+        height:
+          type: integer
+          nullable: true
+          description: 'Height in pixels of the version that rendered. Null when the snap has no source.'
+        type:
+          type: string
+          enum:
+            - image
+            - pdf
+          description: 'image or pdf.'
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+            - canceled
+          description: 'pending, processing, completed, failed or canceled.'
+        is_async:
+          type: boolean
+          description: 'Whether the snap was queued.'
+        webhook_url:
+          type: string
+          nullable: true
+          description: 'Callback URL for async completion.'
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'When rendering finished.'
+        last_error:
+          type: string
+          nullable: true
+          description: 'A fixed code, when status is failed: `render_failed`, or a webhook code (`webhook_address_refused`, `webhook_redirect_refused`, `webhook_unreachable`, `webhook_http_<status>`). Null otherwise.'
+        variants:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/Variant'
+          description: 'The variants applied, as sent. Null when the request sent none.'
+        template_id:
+          type: string
+          nullable: true
+          description: 'Source template UUID. Null for a snap rendered from an inline design, which has no template.'
+        template_title:
+          type: string
+          nullable: true
+          description: 'Source template name. Null for a snap rendered from an inline design.'
+        created_at:
+          type: string
+          format: date-time
+          description: 'ISO-8601 creation timestamp.'
+      required:
+        - id
+        - media_url
+        - width
+        - height
+        - type
+        - status
+        - is_async
+        - webhook_url
+        - completed_at
+        - last_error
+        - variants
+        - template_id
+        - template_title
+        - created_at
+      additionalProperties: false
+    Batch:
+      type: object
+      description: 'The progress of a batch. The create returns it with no `items`. The read and the cancel add `items`. No `data` wrapper.'
+      properties:
+        uuid:
+          type: string
+          description: 'Batch UUID.'
+        title:
+          type: string
+          description: 'Batch name.'
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+            - canceled
+          description: 'pending, processing, completed, failed or canceled.'
+        total_rows:
+          type: integer
+          description: 'Number of items.'
+        processed_rows:
+          type: integer
+          description: 'completed + failed + canceled.'
+        completed:
+          type: integer
+          description: 'Items that rendered.'
+        pending:
+          type: integer
+          description: 'Items that wait or render now.'
+        failed:
+          type: integer
+          description: 'Items that failed.'
+        canceled:
+          type: integer
+          description: 'Items that a cancel stopped.'
+        status_url:
+          type: string
+          description: 'URL of GET /v1/snaps/batches/{batchUuid}.'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchItem'
+          description: 'Every item. Only the read and the cancel return it.'
+      required:
+        - uuid
+        - title
+        - status
+        - total_rows
+        - processed_rows
+        - completed
+        - pending
+        - failed
+        - canceled
+        - status_url
+      additionalProperties: false
+    BatchItem:
+      type: object
+      description: 'One item of a batch.'
+      properties:
+        id:
+          type: string
+          description: 'Snap UUID.'
+        identifier:
+          type: string
+          nullable: true
+          description: 'Your name for the item, or item_1, item_2 and so on.'
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+            - canceled
+          description: 'Item status.'
+        media_url:
+          type: string
+          nullable: true
+          description: 'Image URL when the status is completed. Null when the item is not complete: pending, processing, failed or canceled. Never an empty string. The snap object uses an empty string for the same state.'
+        last_error:
+          type: string
+          nullable: true
+          description: 'A fixed code, when the item failed: `render_failed`. Null otherwise.'
+      required:
+        - id
+        - identifier
+        - status
+        - media_url
+        - last_error
+      additionalProperties: false
+    Media:
+      type: object
+      description: 'One image in your media library. The upload and the list return these fields and no other field.'
+      properties:
+        id:
+          type: integer
+          description: 'Numeric media id.'
+        uuid:
+          type: string
+          description: 'Media UUID.'
+        name:
+          type: string
+          description: 'File name without the extension.'
+        file_name:
+          type: string
+          description: 'Stored file name.'
+        mime_type:
+          type: string
+          nullable: true
+          description: 'MIME type of the upload.'
+        size:
+          type: integer
+          description: 'File size in bytes.'
+        original_url:
+          type: string
+          description: 'URL of the original file.'
+        src:
+          type: string
+          description: 'URL of the `image` conversion. Use it as an image_url variant.'
+        created_at:
+          type: string
+          format: date-time
+          description: 'ISO-8601 upload timestamp.'
+      required:
+        - id
+        - uuid
+        - name
+        - file_name
+        - mime_type
+        - size
+        - original_url
+        - src
+        - created_at
+      additionalProperties: false
+    MediaPage:
+      type: object
+      description: 'A flat Laravel length-aware paginator: the page fields sit next to `data`, with no `meta` key.'
+      properties:
+        current_page:
+          type: integer
+          description: 'Page number.'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Media'
+          description: 'The media on this page, newest first.'
+        first_page_url:
+          type: string
+          description: 'URL of page 1.'
+        from:
+          type: integer
+          nullable: true
+          description: 'Position of the first item on this page.'
+        last_page:
+          type: integer
+          description: 'Number of the last page.'
+        last_page_url:
+          type: string
+          description: 'URL of the last page.'
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaginatorLink'
+          description: 'Page links for a pager.'
+        next_page_url:
+          type: string
+          nullable: true
+          description: 'URL of the next page, or null.'
+        path:
+          type: string
+          description: 'Base URL of the list.'
+        per_page:
+          type: integer
+          description: 'Items per page (12).'
+        prev_page_url:
+          type: string
+          nullable: true
+          description: 'URL of the previous page, or null.'
+        to:
+          type: integer
+          nullable: true
+          description: 'Position of the last item on this page.'
+        total:
+          type: integer
+          description: 'Number of media in the library.'
+      required:
+        - current_page
+        - data
+        - first_page_url
+        - from
+        - last_page
+        - last_page_url
+        - links
+        - next_page_url
+        - path
+        - per_page
+        - prev_page_url
+        - to
+        - total
+    PaginatorLink:
+      type: object
+      description: 'One link of a Laravel paginator.'
+      properties:
+        url:
+          type: string
+          nullable: true
+          description: 'Page URL, or null.'
+        label:
+          type: string
+          description: 'Link label.'
+        active:
+          type: boolean
+          description: 'True for the current page.'
+      required:
+        - url
+        - label
+        - active
+    CursorMeta:
+      type: object
+      description: 'The cursor of a cursor-paginated list.'
+      properties:
+        previous_cursor:
+          type: string
+          nullable: true
+          description: 'Cursor of the previous page, or null.'
+        next_cursor:
+          type: string
+          nullable: true
+          description: 'Cursor of the next page, or null.'
+      required:
+        - previous_cursor
+        - next_cursor
+    Error:
+      type: object
+      description: 'An error with a message only.'
+      properties:
+        message:
+          type: string
+          description: 'What went wrong.'
+      required:
+        - message
+    InternalError:
+      type: object
+      description: 'A 500 error. The server could not complete the request. The body holds no detail of the cause. Quote the `X-Request-Uuid` header in a support ticket.'
+      properties:
+        message:
+          type: string
+          description: 'A fixed message for a person to read.'
+        code:
+          type: string
+          enum:
+            - internal_error
+          description: 'Always `internal_error`.'
+      required:
+        - message
+        - code
+      additionalProperties: false
+    EditorDocumentConflict:
+      type: object
+      description: 'A 409 on an editor document write. The stored revision moved, so nothing was saved. Rebuild the change on `current_document` and send it with `current_revision`.'
+      properties:
+        code:
+          type: string
+          enum:
+            - editor_document_conflict
+          description: 'Always `editor_document_conflict`.'
+        message:
+          type: string
+          description: 'What went wrong and what to do. Do not branch on this text.'
+        current_revision:
+          type: integer
+          description: 'The stored revision.'
+        current_document:
+          type: object
+          description: 'The stored document.'
+      required:
+        - code
+        - message
+        - current_revision
+        - current_document
+    EditorOperationError:
+      type: object
+      description: 'A 422 when the document rejects an operation. `code` names the rule, for example `editor_operation_layer_not_found`.'
+      properties:
+        code:
+          type: string
+          description: 'A stable error code.'
+        message:
+          type: string
+          description: 'What went wrong and how to correct the operation. Do not branch on this text.'
+      required:
+        - code
+        - message
+    ValidationError:
+      type: object
+      description: 'A 422 validation error. `errors` maps each field to its messages.'
+      properties:
+        message:
+          type: string
+          description: 'The first message.'
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: 'Messages per field, for example `errors.template_id`.'
+      required:
+        - message
+        - errors

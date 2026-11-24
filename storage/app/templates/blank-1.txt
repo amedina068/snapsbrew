@@ -1,0 +1,2 @@
+INSERT INTO `templates` (`uuid`, `title`, `width`, `height`, `layers`, `created_at`, `updated_at`) VALUES
+('048a3728-2666-a23c-9d44-90d5c03934ce', 'Blank', '1200', '900', '[]', '2022-08-22 22:17:13', '2022-08-22 22:17:13');

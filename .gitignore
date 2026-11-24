@@ -1,0 +1,25 @@
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.claude/worktrees
+.env
+.env.backup
+.phpunit.result.cache
+docker-compose.override.yml
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/.idea
+/.vscode
+.DS_Store
+/public/build
+/storage/media-library
+# Playwright end-to-end suite (tests/e2e)
+.env.e2e
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
