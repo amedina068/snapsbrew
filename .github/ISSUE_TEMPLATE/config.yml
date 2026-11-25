@@ -1,3 +1,10 @@
 # Each issue uses a template. GitHub adds a "Report a security vulnerability"
 # link to the template list when private vulnerability reporting is on.
 blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://github.com/amedina068/snapsbrew/discussions/categories/q-a
+    about: Ask a question in the Q&A category of the Discussions. Do not open an issue for a question.
+  - name: Documentation
+    url: https://snapsbrew.com/docs
+    about: Read the install guides, the REST API reference and the troubleshooting page.

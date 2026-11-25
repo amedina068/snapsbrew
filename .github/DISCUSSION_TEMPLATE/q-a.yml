@@ -1,0 +1,36 @@
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask a question about how to install, configure or use Snapsbrew. One person maintains this project, so answers are not immediate.
+
+        Do not report a security problem here. Read SECURITY.md and report it in private.
+        If you found a bug, open an issue with the bug report form.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release tag, the image tag or the commit. For a Docker image, run `docker compose images web`. For a checkout, run `git rev-parse --short HEAD`.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Install method
+      options:
+        - Docker image from GHCR (docker-compose.image.yml)
+        - Docker Compose, built from source (docker-compose.yml)
+        - Local install (php artisan serve, Valet, Herd or similar)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Write what you want to do, what you tried and what occurred. Remove tokens, passwords, emails and signed URLs before you paste a log.
+    validations:
+      required: true

@@ -1,5 +1,8 @@
 # Snapsbrew
 
+[![CI](https://github.com/amedina068/snapsbrew/actions/workflows/ci.yml/badge.svg)](https://github.com/amedina068/snapsbrew/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/amedina068/snapsbrew/badge)](https://scorecard.dev/viewer/?uri=github.com/amedina068/snapsbrew)
+
 A self-hosted image API. Design a template once in the browser editor. Then render it many times as an image or a PDF, with new text, images, colors or QR codes. A render can come from the REST API, a signed URL, a form, a spreadsheet or an AI agent.
 
 ```bash

@@ -1,0 +1,28 @@
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share an idea for Snapsbrew. The discussion helps to find the best solution before somebody opens a feature request.
+
+        One person maintains this project. A clear problem statement helps more than a complete solution.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What do you want to do, and what stops you now?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: The proposed solution
+      description: Describe the behavior that you want. Name the surface, for example the editor, the REST API, the MCP server or the Docker setup.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: The workarounds or other solutions that you tried.
