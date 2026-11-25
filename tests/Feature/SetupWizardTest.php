@@ -4,12 +4,13 @@ namespace Tests\Feature;
 
 use App\Actions\Instance\CreateInstanceOwner;
 use App\Contracts\SnapRenderer;
-use App\Jobs\InstallStarterTemplates;
+use App\Jobs\GenerateTemplatePreview;
 use App\Models\Template;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
 use App\Support\Queues;
 use App\Support\StarterTemplates;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
@@ -40,64 +41,135 @@ class SetupWizardTest extends TestCase
         ], $overrides);
     }
 
-    public function test_the_setup_page_shows_the_form_with_the_token_from_the_url()
+    /**
+     * @return Collection<int, Template>
+     */
+    private function starterTemplatesOf(User $owner)
+    {
+        return Template::query()
+            ->where('company_id', $owner->company_id)
+            ->where('title', 'like', StarterTemplates::TITLE_PREFIX.'%')
+            ->get();
+    }
+
+    public function test_the_setup_page_shows_the_form_with_the_right_token_from_the_url()
+    {
+        $this->get('/setup?token='.$this->token())
+            ->assertOk()
+            ->assertSee('name="password"', false)
+            ->assertSee('type="hidden" name="token" value="'.$this->token().'"', false);
+    }
+
+    public function test_the_setup_page_without_a_token_tells_how_to_get_the_setup_url()
+    {
+        $this->get('/setup')
+            ->assertOk()
+            ->assertSee('Snapsbrew is not set up yet')
+            ->assertSee('docker logs snapsbrew')
+            ->assertSee('php artisan snapsbrew:setup-url')
+            ->assertDontSee('name="password"', false);
+    }
+
+    public function test_the_setup_page_with_a_wrong_token_says_so_and_shows_no_form()
     {
         $this->get('/setup?token=abc123')
             ->assertOk()
-            ->assertSee('value="abc123"', false)
-            ->assertSee('snapsbrew:setup-url');
+            ->assertSee('This setup token is not correct.')
+            ->assertSee('docker logs snapsbrew')
+            ->assertDontSee('name="password"', false)
+            ->assertDontSee('abc123');
+    }
+
+    public function test_a_new_instance_sends_the_home_page_to_the_friendly_setup_page()
+    {
+        $this->followingRedirects()
+            ->get('/')
+            ->assertOk()
+            ->assertSee('Snapsbrew is not set up yet');
     }
 
     public function test_the_setup_page_offers_the_starter_templates_checked_by_default()
     {
-        $this->get('/setup')
+        $this->get('/setup?token='.$this->token())
             ->assertOk()
             ->assertSee('Add the starter templates')
             ->assertSee('name="starter_templates" value="0"', false)
             ->assertSeeInOrder(['id="starter_templates"', 'value="1"', 'checked'], false);
     }
 
-    public function test_the_checkbox_queues_the_starter_templates_for_the_new_owner()
+    public function test_the_owner_from_setup_skips_the_onboarding_wizard()
+    {
+        $this->post('/setup', $this->form())->assertRedirect(RouteServiceProvider::HOME);
+
+        $owner = User::where('email', 'owner@example.com')->firstOrFail();
+
+        $this->assertTrue($owner->hasCompletedOnboarding());
+        $this->get('/dashboard')->assertOk();
+        $this->get('/onboarding')->assertRedirect('/dashboard');
+    }
+
+    public function test_the_checkbox_adds_the_starter_templates_in_the_request_and_queues_their_previews()
     {
         Queue::fake();
 
         $this->post('/setup', $this->form(['starter_templates' => '1']))->assertRedirect();
 
         $owner = User::where('email', 'owner@example.com')->firstOrFail();
-        Queue::assertPushedOn(Queues::DEFAULT, InstallStarterTemplates::class, fn (InstallStarterTemplates $job) => $job->user->is($owner));
+        $templates = $this->starterTemplatesOf($owner);
+
+        $this->assertCount(6, $templates);
+        $this->assertTrue($templates->every(fn (Template $template) => $template->user_id === $owner->id && $template->published_version_id !== null));
+        $this->assertTrue($templates->every(fn (Template $template) => ! $template->hasMedia('preview')));
+
+        Queue::assertPushedOn(Queues::DEFAULT, GenerateTemplatePreview::class);
+        Queue::assertPushed(GenerateTemplatePreview::class, 6);
     }
 
-    public function test_an_unchecked_box_queues_no_starter_templates()
+    public function test_the_first_dashboard_load_shows_the_starter_templates()
+    {
+        Queue::fake();
+
+        $this->post('/setup', $this->form(['starter_templates' => '1']))->assertRedirect();
+
+        $this->get('/dashboard')
+            ->assertOk()
+            ->assertSee(StarterTemplates::TITLE_PREFIX)
+            ->assertSee('The preview is on its way.');
+    }
+
+    public function test_an_unchecked_box_adds_no_starter_templates()
     {
         Queue::fake();
 
         $this->post('/setup', $this->form(['starter_templates' => '0']))->assertRedirect();
 
-        $this->assertDatabaseHas('users', ['email' => 'owner@example.com']);
-        Queue::assertNotPushed(InstallStarterTemplates::class);
+        $owner = User::where('email', 'owner@example.com')->firstOrFail();
+        $this->assertCount(0, $this->starterTemplatesOf($owner));
+        Queue::assertNotPushed(GenerateTemplatePreview::class);
     }
 
-    public function test_a_failed_setup_queues_no_starter_templates()
+    public function test_a_failed_setup_adds_no_starter_templates()
     {
         Queue::fake();
 
         $this->post('/setup', $this->form(['token' => 'wrong-token', 'starter_templates' => '1']))
             ->assertSessionHasErrors('token');
 
-        Queue::assertNotPushed(InstallStarterTemplates::class);
+        $this->assertSame(0, Template::query()->where('title', 'like', StarterTemplates::TITLE_PREFIX.'%')->count());
+        Queue::assertNotPushed(GenerateTemplatePreview::class);
     }
 
-    public function test_the_queued_job_adds_the_six_starter_templates_to_the_company_of_the_owner()
+    public function test_the_queued_previews_render_for_the_six_starter_templates()
     {
         $this->app->instance(SnapRenderer::class, new FakeRenderer);
 
         $this->post('/setup', $this->form(['starter_templates' => '1']))->assertRedirect();
 
         $owner = User::where('email', 'owner@example.com')->firstOrFail();
-        $templates = Template::query()->where('company_id', $owner->company_id)->where('title', 'like', StarterTemplates::TITLE_PREFIX.'%')->get();
+        $templates = $this->starterTemplatesOf($owner);
 
         $this->assertCount(6, $templates);
-        $this->assertTrue($templates->every(fn (Template $template) => $template->user_id === $owner->id && $template->published_version_id !== null));
+        $this->assertTrue($templates->every(fn (Template $template) => $template->hasMedia('preview')));
     }
 
     public function test_a_wrong_token_creates_no_account()

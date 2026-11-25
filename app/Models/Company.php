@@ -80,6 +80,7 @@ class Company extends Model
         return $this->hasMany(CreativePackage::class);
     }
 
+    /** @return HasMany<CompanyInvitation, $this> */
     public function invitations(): HasMany
     {
         return $this->hasMany(CompanyInvitation::class);

@@ -13,7 +13,19 @@
         </div>
       @endif
 
-      @if ($statusMessage ?? false)
+      @if (session('invite_url'))
+        {{-- The invite link holds APP_URL and a token of letters and digits, so the copy field can sit outside v-pre. --}}
+        @php($inviteSent = (bool) session('invite_sent'))
+        <div @class([
+          'mb-8 rounded-lg border-l-4 px-4 py-3 text-sm',
+          'border-l-emerald-500 bg-emerald-50 text-emerald-900' => $inviteSent,
+          'border-l-amber-400 bg-amber-50 text-gray-900' => ! $inviteSent,
+        ]) role="status">
+          <p v-pre class="font-semibold">{{ $statusMessage }}</p>
+          <x-ui.copy-field class="mt-2 bg-white" :value="session('invite_url')" />
+          <p class="mt-3 text-xs">The link works for 7 days. The person who opens it can sign up and join your company.</p>
+        </div>
+      @elseif ($statusMessage ?? false)
         <div v-pre class="mb-8 rounded-lg border-l-4 border-l-emerald-500 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
           {{ $statusMessage }}
         </div>

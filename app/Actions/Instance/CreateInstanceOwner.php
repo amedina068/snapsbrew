@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\DB;
  * Creates the owner account of a self-hosted instance.
  *
  * The `snapsbrew:install` command and the web setup page both use this action.
- * The owner gets a new company and a verified email.
+ * The owner gets a new company and a verified email. The setup page and the
+ * command already ask for the name and the company, so the owner skips the
+ * onboarding wizard.
  */
 class CreateInstanceOwner
 {
@@ -60,8 +62,13 @@ class CreateInstanceOwner
         ]);
 
         $user->company->update(['name' => ($input['company'] ?? null) ?: "{$input['name']}'s Company"]);
-        $user->forceFill(['is_owner' => true, 'email_verified_at' => now()])->save();
+        $user->forceFill([
+            'is_owner' => true,
+            'email_verified_at' => now(),
+            'onboarding_completed_at' => now(),
+        ])->save();
 
-        return $user;
+        // Read the database defaults, for example the role, that the policies check.
+        return $user->refresh();
     }
 }

@@ -99,7 +99,7 @@ class SignedUrlMiddleware
      * The URL that the snap cache key hashes. It keeps the origin that every
      * existing snap was cached under, so the key does not depend on the host
      * that serves the request. A key with the request host misses the cache on
-     * a new host, and each image renders again for one more credit.
+     * a new host, and each image renders again.
      */
     private function cacheUrl(Request $request): string
     {

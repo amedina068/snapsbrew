@@ -9,6 +9,7 @@ use App\Models\CompanyInvitation;
 use App\Models\User;
 use App\Services\OnboardingSnapDispatcher;
 use App\Support\InvitationQuota;
+use App\Support\MailDelivery;
 use App\Support\Queues;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,22 +31,36 @@ class OnboardingController extends Controller
         return view('onboarding.show', [
             'name' => $user->name,
             'companyName' => $user->company->name,
+            'canRenameCompany' => $user->isCompanyFounder(),
             'categories' => OnboardingSnapDispatcher::CATEGORY_PREFIX,
         ]);
     }
 
+    /**
+     * Save the name of the user. Only the founder of the company can set the
+     * company name here. A member who joined through an invitation gets a
+     * validation error if the request has a company name.
+     */
     public function storeProfile(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $isFounder = $user->isCompanyFounder();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'company_name' => ['required', 'string', 'max:255'],
+            'company_name' => $isFounder
+                ? ['required', 'string', 'max:255']
+                : ['prohibited'],
+        ], [
+            'company_name.prohibited' => 'Only the person who created the company can change its name.',
         ]);
 
-        $user = $request->user();
-
-        DB::transaction(function () use ($user, $data) {
+        DB::transaction(function () use ($user, $data, $isFounder) {
             $user->update(['name' => $data['name']]);
-            $user->company->update(['name' => $data['company_name']]);
+
+            if ($isFounder) {
+                $user->company->update(['name' => $data['company_name']]);
+            }
         });
 
         return response()->json(['ok' => true]);
@@ -78,13 +93,21 @@ class OnboardingController extends Controller
         $user = $request->user();
         $company = $user->company;
 
-        collect($data['emails'] ?? [])
+        $invitations = collect($data['emails'] ?? [])
             ->map(fn ($email) => strtolower(trim($email)))
             ->filter()
             ->unique()
-            ->each(fn ($email) => $this->inviteIfPossible($company, $user, $email));
+            ->map(fn ($email) => $this->inviteIfPossible($company, $user, $email))
+            ->filter()
+            ->map(fn (CompanyInvitation $invitation) => ['email' => $invitation->email, 'url' => $invitation->url()])
+            ->values();
 
-        return response()->json(['ok' => true]);
+        // Without mail, the wizard shows each link so the user can send it.
+        return response()->json([
+            'ok' => true,
+            'mail_configured' => MailDelivery::isConfigured(),
+            'invitations' => $invitations,
+        ]);
     }
 
     public function finish(Request $request): JsonResponse
@@ -100,11 +123,11 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Send a company invitation, silently skipping emails that already
-     * belong to a member or have a pending invite — onboarding should not
-     * hard-fail on a duplicate the user typed.
+     * Create a company invitation and send its mail. The method skips an
+     * email of a member or of a pending invitation, so a duplicate does not
+     * stop onboarding. It returns null for a skipped email.
      */
-    private function inviteIfPossible(Company $company, User $inviter, string $email): void
+    private function inviteIfPossible(Company $company, User $inviter, string $email): ?CompanyInvitation
     {
         $isMember = User::query()
             ->where('company_id', $company->id)
@@ -112,7 +135,7 @@ class OnboardingController extends Controller
             ->exists();
 
         if ($isMember) {
-            return;
+            return null;
         }
 
         $alreadyInvited = CompanyInvitation::query()
@@ -122,7 +145,7 @@ class OnboardingController extends Controller
             ->exists();
 
         if ($alreadyInvited || ! InvitationQuota::take($company)) {
-            return;
+            return null;
         }
 
         $invitation = $company->invitations()->create([
@@ -132,8 +155,12 @@ class OnboardingController extends Controller
             'expires_at' => now()->addDays(7),
         ]);
 
-        Mail::to($email)->queue(
-            (new CompanyInvitationMail($invitation, $inviter))->onQueue(Queues::MAIL)
-        );
+        if (MailDelivery::isConfigured()) {
+            Mail::to($email)->queue(
+                (new CompanyInvitationMail($invitation, $inviter))->onQueue(Queues::MAIL)
+            );
+        }
+
+        return $invitation;
     }
 }

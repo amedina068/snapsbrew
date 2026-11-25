@@ -1,4 +1,5 @@
 import './bootstrap';
+import { listenForCopyButtons } from './copyText'
 
 import { createApp } from 'vue'
 
@@ -89,3 +90,5 @@ app.component('TemplateActionsModal', TemplateActionsModal)
 app.component('TemplateSettingsModal', TemplateSettingsModal)
 app.component('CodeSnippet', CodeSnippet)
 app.use(store).mount('#app')
+
+listenForCopyButtons()

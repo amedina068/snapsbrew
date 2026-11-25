@@ -39,7 +39,8 @@
               >
               <p v-if="errorFor('name')" id="ob-name-error" class="mt-1 font-sans text-sm text-atomic-coral-dk">{{ errorFor('name') }}</p>
             </div>
-            <div>
+            <p v-if="!canRenameCompany" class="font-sans text-atomic-ink/70">You joined {{ initialCompany }}.</p>
+            <div v-else>
               <label class="font-sans font-semibold text-atomic-ink" for="ob-company">Company name</label>
               <input
                 id="ob-company"
@@ -83,6 +84,32 @@
           <p v-if="errorFor('categories')" class="mt-3 font-sans text-sm text-atomic-coral-dk">{{ errorFor('categories') }}</p>
         </section>
 
+        <!-- Step 3, after the invites, when mail is not set up -->
+        <section v-else-if="inviteLinks">
+          <h1 ref="heading" tabindex="-1" class="font-display text-3xl tracking-tight text-atomic-ink outline-none sm:text-4xl">
+            Send the invite links
+          </h1>
+          <p class="mt-2 font-sans text-atomic-ink/70">Mail is not set up. Send this link yourself.</p>
+
+          <ul class="mt-7 space-y-4">
+            <li v-for="invite in inviteLinks" :key="invite.email">
+              <p class="font-sans font-semibold text-atomic-ink">{{ invite.email }}</p>
+              <div class="mt-1.5 flex items-stretch gap-2">
+                <code class="min-w-0 flex-1 rounded-2xl border-[3px] border-atomic-ink bg-white px-4 py-2.5 font-mono text-xs break-all text-atomic-ink">{{ invite.url }}</code>
+                <button
+                  type="button"
+                  @click="copyInvite(invite)"
+                  class="shrink-0 rounded-full border-[3px] border-atomic-ink bg-atomic-cream px-4 font-sans text-sm font-bold text-atomic-ink shadow-atomic transition hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-[3px_3px_0_0_#211d1a] focus-visible:outline-solid focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-atomic-ink"
+                  :aria-label="`Copy the invite link of ${invite.email}`"
+                >
+                  {{ copied === invite.email ? 'Copied' : 'Copy' }}
+                </button>
+              </div>
+            </li>
+          </ul>
+          <p class="mt-4 font-sans text-sm text-atomic-ink/70">Each link works for 7 days. You can copy the links again on the Account page.</p>
+        </section>
+
         <!-- Step 3 — invites -->
         <section v-else>
           <h1 ref="heading" tabindex="-1" class="font-display text-3xl tracking-tight text-atomic-ink outline-none sm:text-4xl">
@@ -118,7 +145,17 @@
         <p v-if="errorFor('general')" class="mt-6 font-sans text-sm font-semibold text-atomic-coral-dk" role="alert">{{ errorFor('general') }}</p>
 
         <!-- Controls -->
-        <div class="mt-9 flex items-center justify-between gap-3">
+        <div v-if="inviteLinks" class="mt-9 flex justify-end">
+          <button
+            type="button"
+            :disabled="submitting"
+            @click="complete"
+            class="inline-flex items-center gap-2 rounded-full border-[3px] border-atomic-ink bg-atomic-coral px-7 py-3 font-sans font-bold text-atomic-cream shadow-atomic transition hover:translate-x-[3px] hover:translate-y-[3px] hover:bg-atomic-coral-dk hover:shadow-[3px_3px_0_0_#211d1a] focus-visible:outline-solid focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-atomic-ink disabled:opacity-60"
+          >
+            Go to the dashboard
+          </button>
+        </div>
+        <div v-else class="mt-9 flex items-center justify-between gap-3">
           <button
             v-if="step > 1"
             type="button"
@@ -157,12 +194,16 @@
 </template>
 
 <script>
+import { copyText } from '../copyText'
+
 export default {
   name: 'OnboardingWizard',
 
   props: {
     initialName: { type: String, default: '' },
     initialCompany: { type: String, default: '' },
+    // Only the founder of the company can set its name. An invited member cannot.
+    canRenameCompany: { type: Boolean, default: true },
   },
 
   data() {
@@ -172,6 +213,9 @@ export default {
       errors: {},
       // The error of each invite field, by the position of the field.
       emailErrors: {},
+      // The invite links to show when the server cannot send mail.
+      inviteLinks: null,
+      copied: null,
       categories: [
         { slug: 'social', label: 'Social media posts', blurb: 'Instagram, TikTok, LinkedIn — sized and ready.' },
         { slug: 'blog', label: 'Blog & OG images', blurb: 'Link previews and headers that pop.' },
@@ -190,6 +234,9 @@ export default {
   watch: {
     // Move the focus to the heading of the new step, so a screen reader reads it.
     step() {
+      this.$nextTick(() => this.$refs.heading?.focus())
+    },
+    inviteLinks() {
       this.$nextTick(() => this.$refs.heading?.focus())
     },
   },
@@ -228,10 +275,9 @@ export default {
 
     async advance() {
       if (this.step === 1) {
-        await this.submitStep('/onboarding/profile', {
-          name: this.form.name,
-          company_name: this.form.companyName,
-        }, () => { this.step = 2 })
+        const profile = { name: this.form.name }
+        if (this.canRenameCompany) profile.company_name = this.form.companyName
+        await this.submitStep('/onboarding/profile', profile, () => { this.step = 2 })
       } else if (this.step === 2) {
         await this.submitStep('/onboarding/categories', {
           categories: this.form.categories,
@@ -255,10 +301,14 @@ export default {
 
       try {
         if (!skipInvites && sent.length) {
-          await window.axios.post('/onboarding/invites', { emails: sent.map(item => item.value) })
+          const { data: invited } = await window.axios.post('/onboarding/invites', { emails: sent.map(item => item.value) })
+          if (invited?.mail_configured === false && invited.invitations?.length) {
+            this.inviteLinks = invited.invitations
+            this.submitting = false
+            return
+          }
         }
-        const { data } = await window.axios.post('/onboarding/finish', {})
-        window.location.assign(data.redirect || '/dashboard')
+        await this.redirectToDashboard()
       } catch (e) {
         const errors = this.errorsFrom(e)
         Object.keys(errors).forEach(key => {
@@ -274,6 +324,29 @@ export default {
         }
         this.submitting = false
       }
+    },
+
+    async redirectToDashboard() {
+      const { data } = await window.axios.post('/onboarding/finish', {})
+      window.location.assign(data.redirect || '/dashboard')
+    },
+
+    async complete() {
+      if (this.submitting) return
+      this.submitting = true
+      this.errors = {}
+      try {
+        await this.redirectToDashboard()
+      } catch (e) {
+        this.errors = this.errorsFrom(e)
+        this.submitting = false
+      }
+    },
+
+    async copyInvite(invite) {
+      await copyText(invite.url)
+      this.copied = invite.email
+      window.setTimeout(() => { if (this.copied === invite.email) this.copied = null }, 2000)
     },
 
     async submitStep(url, payload, onSuccess) {

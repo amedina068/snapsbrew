@@ -31,6 +31,10 @@ This file lists the changes to the code for each release. The release notes for 
 - A snap has a `warnings` list. If the server cannot load a font, the render continues, logs a warning and adds a `font_unavailable` item to `warnings`.
 - `RENDER_ASSET_URL` sets the app address that the render browser uses for the images and the fonts of a snap on the `public` disk. The host of this address is a trusted host.
 - `BROWSERSHOT_NODE_MODULES_PATH`, `BROWSERSHOT_CHROME_PATH` and `BROWSERSHOT_NO_SANDBOX` configure the Browsershot renderer.
+- Each pending invitation on **Account > Users** has a **Copy invite link** button. After a new invitation, the page shows the invite link.
+- When `MAIL_MAILER` is `log`, the invitation pages say "Mail is not set up. Send this link yourself." The onboarding wizard shows the links too.
+- `/setup` without a correct token shows how to get the setup URL (`docker logs snapsbrew` or `php artisan snapsbrew:setup-url`).
+- `install.sh` installs Snapsbrew on a server with Docker in one command. `INSTALL.md` gives the same steps to an AI agent.
 
 ### Changed
 
@@ -43,6 +47,9 @@ This file lists the changes to the code for each release. The release notes for 
 - A release tag `v0.x.y` also publishes the image tag `0`.
 
 - The Browsershot renderer finds `node` and `npm` on `PATH` when `BROWSERSHOT_NODE_PATH` and `BROWSERSHOT_NPM_PATH` are empty. It reads Puppeteer from the `node_modules` folder of the app and no longer runs `npm root -g` for each render. In a container or as root, it turns off the Chrome sandbox. `BROWSERSHOT_INSTANCE` also accepts `host:port`.
+- The owner that `/setup` or `snapsbrew:install` creates goes to the dashboard, not to the onboarding wizard.
+- The setup page adds the starter templates in the request, so the first dashboard shows them. Their preview images render on the queue.
+- The invitation page says "Invitation sent" only when a mail went out.
 - Each REST API route with a bearer token answers an error with a JSON body, also when the request has no `Accept: application/json` header. Before, such a request got a 302 to `/login` for a bad token, a 302 for a validation error and an HTML page for a missing record.
 - The `409` and `422` bodies of the template and editor document routes have a `message` next to `code`. The message says how to correct the request.
 - `composer test` runs the test suite in parallel processes, and `composer lint` runs the code style check. The tests now write the files of the `public` disk to `storage/framework/testing`, so a test run no longer adds or deletes files in `storage/app/public` of a checkout.

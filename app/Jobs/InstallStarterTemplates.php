@@ -12,11 +12,13 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Adds the starter templates after the setup page creates the owner.
+ * Adds the starter templates to the company of a user on the queue.
  *
- * The installer renders six preview images, so the setup request does not
- * wait for it. A retry is safe, because the installer skips each starter
- * template that the company already has.
+ * The setup page does not use this job. It adds the templates in the request
+ * and queues one GenerateTemplatePreview job for each template. A caller that
+ * must not wait for the six preview images, for example a command or an admin
+ * tool, queues this job. A retry is safe, because the installer skips each
+ * starter template that the company already has.
  */
 class InstallStarterTemplates implements ShouldQueue
 {
