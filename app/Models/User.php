@@ -115,6 +115,22 @@ class User extends Authenticatable implements HasMedia
         ];
     }
 
+    /**
+     * The founder is the first user of the company: the user who created it.
+     * A member who joined later through an invitation is not the founder.
+     * The rule reads the users table and not the invitation rows, because a
+     * member can delete an invitation row.
+     */
+    public function isCompanyFounder(): bool
+    {
+        $firstUserId = User::query()
+            ->where('company_id', $this->company_id)
+            ->orderBy('id')
+            ->value('id');
+
+        return $firstUserId === $this->id;
+    }
+
     /** The person who runs this instance. Only the owner can open Horizon. */
     public function isOwner(): bool
     {

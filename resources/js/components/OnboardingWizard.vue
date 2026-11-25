@@ -39,7 +39,8 @@
               >
               <p v-if="errorFor('name')" id="ob-name-error" class="mt-1 font-sans text-sm text-atomic-coral-dk">{{ errorFor('name') }}</p>
             </div>
-            <div>
+            <p v-if="!canRenameCompany" class="font-sans text-atomic-ink/70">You joined {{ initialCompany }}.</p>
+            <div v-else>
               <label class="font-sans font-semibold text-atomic-ink" for="ob-company">Company name</label>
               <input
                 id="ob-company"
@@ -201,6 +202,8 @@ export default {
   props: {
     initialName: { type: String, default: '' },
     initialCompany: { type: String, default: '' },
+    // Only the founder of the company can set its name. An invited member cannot.
+    canRenameCompany: { type: Boolean, default: true },
   },
 
   data() {
@@ -272,10 +275,9 @@ export default {
 
     async advance() {
       if (this.step === 1) {
-        await this.submitStep('/onboarding/profile', {
-          name: this.form.name,
-          company_name: this.form.companyName,
-        }, () => { this.step = 2 })
+        const profile = { name: this.form.name }
+        if (this.canRenameCompany) profile.company_name = this.form.companyName
+        await this.submitStep('/onboarding/profile', profile, () => { this.step = 2 })
       } else if (this.step === 2) {
         await this.submitStep('/onboarding/categories', {
           categories: this.form.categories,

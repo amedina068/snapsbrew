@@ -57,3 +57,28 @@ describe('OnboardingWizard invites', () => {
     expect(assign).toHaveBeenCalledWith('/dashboard')
   })
 })
+
+describe('OnboardingWizard profile', () => {
+  it('asks the founder for the company name and sends it', async () => {
+    http.post.mockResolvedValue({ data: { ok: true } })
+    const wrapper = mount(OnboardingWizard, { props: { initialName: 'Ana', initialCompany: 'Acme' } })
+
+    expect(wrapper.find('#ob-company').exists()).toBe(true)
+    await clickButton(wrapper, 'Continue')
+
+    expect(http.post).toHaveBeenCalledWith('/onboarding/profile', { name: 'Ana', company_name: 'Acme' })
+  })
+
+  it('does not show or send the company name for an invited member', async () => {
+    http.post.mockResolvedValue({ data: { ok: true } })
+    const wrapper = mount(OnboardingWizard, {
+      props: { initialName: 'Pat', initialCompany: 'Acme', canRenameCompany: false },
+    })
+
+    expect(wrapper.find('#ob-company').exists()).toBe(false)
+    expect(wrapper.text()).toContain('You joined Acme.')
+    await clickButton(wrapper, 'Continue')
+
+    expect(http.post).toHaveBeenCalledWith('/onboarding/profile', { name: 'Pat' })
+  })
+})

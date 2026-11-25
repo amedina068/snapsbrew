@@ -344,4 +344,94 @@ class OnboardingTest extends TestCase
             ->assertOk()
             ->assertJsonPath('invitations', []);
     }
+
+    /**
+     * Register a member through an invitation of the company of $founder, the
+     * same way the sign-up form does.
+     */
+    private function registerInvitedMember(User $founder): User
+    {
+        $invitation = CompanyInvitation::factory()->create([
+            'company_id' => $founder->company_id,
+            'invited_by' => $founder->id,
+            'email' => 'member@acme.test',
+        ]);
+
+        $this->post('/register', [
+            'email' => 'member@acme.test',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'invitation_token' => $invitation->token,
+        ])->assertRedirect();
+
+        return User::query()->where('email', 'member@acme.test')->firstOrFail();
+    }
+
+    public function test_an_invited_member_cannot_rename_the_company_in_onboarding(): void
+    {
+        $company = Company::factory()->create(['name' => 'Acme']);
+        $founder = User::factory()->create(['company_id' => $company->id]);
+        $member = $this->registerInvitedMember($founder);
+
+        $this->actingAs($member)
+            ->postJson('/onboarding/profile', ['name' => 'Pat', 'company_name' => 'Taken Over'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('company_name');
+
+        $this->assertSame('Acme', $company->fresh()->name);
+    }
+
+    public function test_an_invited_member_saves_only_the_own_name_in_onboarding(): void
+    {
+        $company = Company::factory()->create(['name' => 'Acme']);
+        $founder = User::factory()->create(['company_id' => $company->id]);
+        $member = $this->registerInvitedMember($founder);
+
+        $this->actingAs($member)
+            ->postJson('/onboarding/profile', ['name' => 'Pat'])
+            ->assertOk();
+
+        $this->assertSame('Pat', $member->fresh()->name);
+        $this->assertSame('Acme', $company->fresh()->name);
+    }
+
+    public function test_the_wizard_hides_the_company_field_from_an_invited_member(): void
+    {
+        $company = Company::factory()->create(['name' => 'Acme']);
+        $founder = User::factory()->create(['company_id' => $company->id]);
+        $member = $this->registerInvitedMember($founder);
+
+        $this->actingAs($member)
+            ->get('/onboarding')
+            ->assertOk()
+            ->assertViewHas('canRenameCompany', false)
+            ->assertSee(':can-rename-company="false"', false);
+    }
+
+    public function test_the_wizard_shows_the_company_field_to_the_founder(): void
+    {
+        $company = Company::factory()->create(['name' => 'Acme']);
+        $founder = User::factory()->needsOnboarding()->create(['company_id' => $company->id]);
+
+        $this->actingAs($founder)
+            ->get('/onboarding')
+            ->assertOk()
+            ->assertViewHas('canRenameCompany', true)
+            ->assertSee(':can-rename-company="true"', false);
+    }
+
+    public function test_the_founder_stays_the_founder_after_a_member_joins(): void
+    {
+        $company = Company::factory()->create(['name' => 'Acme']);
+        $founder = User::factory()->needsOnboarding()->create(['company_id' => $company->id]);
+        $this->registerInvitedMember($founder);
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+
+        $this->actingAs($founder->fresh())
+            ->postJson('/onboarding/profile', ['name' => 'Ana', 'company_name' => 'Acme Studio'])
+            ->assertOk();
+
+        $this->assertSame('Acme Studio', $company->fresh()->name);
+    }
 }

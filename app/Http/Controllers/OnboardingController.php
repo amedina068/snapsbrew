@@ -31,22 +31,36 @@ class OnboardingController extends Controller
         return view('onboarding.show', [
             'name' => $user->name,
             'companyName' => $user->company->name,
+            'canRenameCompany' => $user->isCompanyFounder(),
             'categories' => OnboardingSnapDispatcher::CATEGORY_PREFIX,
         ]);
     }
 
+    /**
+     * Save the name of the user. Only the founder of the company can set the
+     * company name here. A member who joined through an invitation gets a
+     * validation error if the request has a company name.
+     */
     public function storeProfile(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $isFounder = $user->isCompanyFounder();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'company_name' => ['required', 'string', 'max:255'],
+            'company_name' => $isFounder
+                ? ['required', 'string', 'max:255']
+                : ['prohibited'],
+        ], [
+            'company_name.prohibited' => 'Only the person who created the company can change its name.',
         ]);
 
-        $user = $request->user();
-
-        DB::transaction(function () use ($user, $data) {
+        DB::transaction(function () use ($user, $data, $isFounder) {
             $user->update(['name' => $data['name']]);
-            $user->company->update(['name' => $data['company_name']]);
+
+            if ($isFounder) {
+                $user->company->update(['name' => $data['company_name']]);
+            }
         });
 
         return response()->json(['ok' => true]);
