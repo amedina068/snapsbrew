@@ -180,17 +180,81 @@ jobs:
           composer api-docs
           git diff --exit-code docs/api
 
+  schema-dumps:
+    name: Schema dumps
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, dom, ctype, fileinfo, openssl, pdo, sqlite3, pdo_sqlite, pdo_mysql, gd, zip, exif, bcmath, intl
+          coverage: none
+
+      - name: Read the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      # The files in database/schema come from the migrations. If a change to
+      # the migrations does not include the files that the script writes, this
+      # step fails. Laravel still runs a migration that a dump does not list,
+      # so a stale dump is slow, not wrong.
+      - name: Make sure that database/schema is up to date
+        run: |
+          scripts/dump-schemas.sh
+          git diff --exit-code database/schema
+
   test:
-    name: PHP ${{ matrix.php }}
+    name: PHP ${{ matrix.php }} (${{ matrix.db }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         php: ["8.3", "8.4"]
+        db: [sqlite, mysql]
+
+    # The sqlite jobs start no service: an empty image name skips it.
+    services:
+      mysql:
+        image: ${{ matrix.db == 'mysql' && 'mysql:8.4' || '' }}
+        env:
+          MYSQL_DATABASE: snapsbrew_test
+          MYSQL_USER: snapsbrew
+          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
 
     env:
-      DB_CONNECTION: sqlite
-      DB_DATABASE: ":memory:"
+      DB_CONNECTION: ${{ matrix.db }}
+      DB_DATABASE: ${{ matrix.db == 'mysql' && 'snapsbrew_test' || ':memory:' }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: snapsbrew
+      DB_PASSWORD: password
 
     steps:
       - uses: actions/checkout@v4
@@ -199,7 +263,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: mbstring, dom, ctype, fileinfo, openssl, pdo, sqlite3, pdo_sqlite, gd, zip, exif, bcmath, intl
+          extensions: mbstring, dom, ctype, fileinfo, openssl, pdo, sqlite3, pdo_sqlite, pdo_mysql, gd, zip, exif, bcmath, intl
           coverage: none
 
       # The Composer download cache does not depend on the PHP version, so all
@@ -224,14 +288,14 @@ jobs:
           php artisan key:generate --no-interaction
 
       # Fast-fail: prove that the full migration chain builds from scratch on a
-      # clean database before the suite runs.
+      # clean database before the suite runs. The schema path names no file,
+      # so the step runs each migration instead of the dump in database/schema.
       - name: Verify fresh migration build
         run: |
           touch /tmp/ci.sqlite
-          php artisan migrate:fresh --force --no-interaction
+          php artisan migrate:fresh --force --no-interaction --schema-path=/tmp/no-schema-dump.sql
         env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: /tmp/ci.sqlite
+          DB_DATABASE: ${{ matrix.db == 'mysql' && 'snapsbrew_test' || '/tmp/ci.sqlite' }}
           # This step runs outside PHPUnit, so a data migration guarded by
           # `runningUnitTests()` still executes and dispatches its jobs. There is
           # no queue backend in CI, so discard them. The step proves the schema
