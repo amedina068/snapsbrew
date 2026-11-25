@@ -5,11 +5,12 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
+use Tests\Support\LoadsHorizon;
 use Tests\TestCase;
 
 class OwnerTest extends TestCase
 {
-    use RefreshDatabase;
+    use LoadsHorizon, RefreshDatabase;
 
     public function test_only_the_owner_of_the_instance_can_open_horizon()
     {

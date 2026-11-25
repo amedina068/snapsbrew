@@ -46,7 +46,9 @@ return [
             'driver' => 'database',
             'table' => 'jobs',
             'queue' => 'default',
-            'retry_after' => 90,
+            // The same value as the redis connection: more than the 120-second
+            // creative package attempt plus its longest backoff (45).
+            'retry_after' => 180,
             'after_commit' => false,
         ],
 

@@ -41,6 +41,15 @@ return [
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+            // The web server, the queue worker and the scheduler write to one
+            // file. WAL lets a reader run during a write. A writer waits up to
+            // busy_timeout milliseconds for the lock. IMMEDIATE takes the
+            // write lock when a transaction starts, so two transactions do
+            // not fail with "database is locked" when they upgrade a read.
+            'busy_timeout' => (int) env('DB_BUSY_TIMEOUT', 5000),
+            'journal_mode' => env('DB_JOURNAL_MODE', 'wal'),
+            'synchronous' => env('DB_SYNCHRONOUS', 'normal'),
+            'transaction_mode' => env('DB_TRANSACTION_MODE', 'IMMEDIATE'),
         ],
 
         'mysql' => [
