@@ -7878,7 +7878,7 @@
                                     "value": "application/json"
                                 }
                             ],
-                            "body": "{\n  \"id\": \"9f1c2d3e\",\n  \"media_url\": \"https://app.example.com/storage/snaps/9f1c2d3e.png\",\n  \"width\": 1200,\n  \"height\": 630,\n  \"type\": \"image\",\n  \"status\": \"completed\",\n  \"is_async\": false,\n  \"webhook_url\": null,\n  \"completed_at\": \"2026-05-01T12:00:03Z\",\n  \"last_error\": null,\n  \"variants\": [],\n  \"template_id\": \"141e8454-8aa1-420a-bd0b-18a85ba949a2\",\n  \"template_title\": \"Launch card\",\n  \"created_at\": \"2026-05-01T12:00:00Z\"\n}",
+                            "body": "{\n  \"id\": \"9f1c2d3e\",\n  \"media_url\": \"https://app.example.com/storage/snaps/9f1c2d3e.png\",\n  \"width\": 1200,\n  \"height\": 630,\n  \"type\": \"image\",\n  \"status\": \"completed\",\n  \"is_async\": false,\n  \"webhook_url\": null,\n  \"completed_at\": \"2026-05-01T12:00:03Z\",\n  \"last_error\": null,\n  \"warnings\": [],\n  \"variants\": [],\n  \"template_id\": \"141e8454-8aa1-420a-bd0b-18a85ba949a2\",\n  \"template_title\": \"Launch card\",\n  \"created_at\": \"2026-05-01T12:00:00Z\"\n}",
                             "cookie": [],
                             "_postman_previewlanguage": "json"
                         },
@@ -7927,7 +7927,7 @@
                                     "value": "application/json"
                                 }
                             ],
-                            "body": "{\n  \"id\": \"9f1c2d3e\",\n  \"media_url\": \"\",\n  \"width\": 1200,\n  \"height\": 630,\n  \"type\": \"image\",\n  \"status\": \"pending\",\n  \"is_async\": true,\n  \"webhook_url\": \"https://example.com/hooks/snap\",\n  \"completed_at\": null,\n  \"last_error\": null,\n  \"variants\": [],\n  \"template_id\": \"141e8454-8aa1-420a-bd0b-18a85ba949a2\",\n  \"template_title\": \"Launch card\",\n  \"created_at\": \"2026-05-01T12:00:00Z\"\n}",
+                            "body": "{\n  \"id\": \"9f1c2d3e\",\n  \"media_url\": \"\",\n  \"width\": 1200,\n  \"height\": 630,\n  \"type\": \"image\",\n  \"status\": \"pending\",\n  \"is_async\": true,\n  \"webhook_url\": \"https://example.com/hooks/snap\",\n  \"completed_at\": null,\n  \"last_error\": null,\n  \"warnings\": [],\n  \"variants\": [],\n  \"template_id\": \"141e8454-8aa1-420a-bd0b-18a85ba949a2\",\n  \"template_title\": \"Launch card\",\n  \"created_at\": \"2026-05-01T12:00:00Z\"\n}",
                             "cookie": [],
                             "_postman_previewlanguage": "json"
                         },
@@ -11807,7 +11807,7 @@
                                     "value": "application/json"
                                 }
                             ],
-                            "body": "{\n  \"id\": \"9f1c2d3e\",\n  \"media_url\": \"https://app.example.com/storage/snaps/9f1c2d3e.png\",\n  \"width\": 1200,\n  \"height\": 630,\n  \"type\": \"image\",\n  \"status\": \"completed\",\n  \"is_async\": false,\n  \"webhook_url\": null,\n  \"completed_at\": \"2026-05-01T12:00:03Z\",\n  \"last_error\": null,\n  \"variants\": [],\n  \"template_id\": \"141e8454\",\n  \"template_title\": \"Launch card\",\n  \"created_at\": \"2026-05-01T12:00:00Z\"\n}",
+                            "body": "{\n  \"id\": \"9f1c2d3e\",\n  \"media_url\": \"https://app.example.com/storage/snaps/9f1c2d3e.png\",\n  \"width\": 1200,\n  \"height\": 630,\n  \"type\": \"image\",\n  \"status\": \"completed\",\n  \"is_async\": false,\n  \"webhook_url\": null,\n  \"completed_at\": \"2026-05-01T12:00:03Z\",\n  \"last_error\": null,\n  \"warnings\": [],\n  \"variants\": [],\n  \"template_id\": \"141e8454\",\n  \"template_title\": \"Launch card\",\n  \"created_at\": \"2026-05-01T12:00:00Z\"\n}",
                             "cookie": [],
                             "_postman_previewlanguage": "json"
                         },

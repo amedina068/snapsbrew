@@ -38,11 +38,29 @@ return [
 
     'render' => [
         'driver' => env('RENDER_DRIVER', 'browsershot'),
+        // The app origin that the render browser can reach, for example
+        // http://127.0.0.1:8080 for the Chromium in the image, or
+        // http://web:8080 for browserless in Docker Compose. It is used only
+        // when MEDIA_DISK is "public". Empty keeps the APP_URL asset URLs.
+        'asset_url' => env('RENDER_ASSET_URL'),
+        // Embed the Google fonts of a snap in its HTML, so a render needs no
+        // internet access. The starter fonts ship in resources/fonts. The
+        // first render with another font downloads it to font_cache_path.
+        'embed_fonts' => (bool) env('RENDER_EMBED_FONTS', true),
+        'font_downloads' => (bool) env('RENDER_FONT_DOWNLOADS', true),
+        'font_cache_path' => storage_path('app/fonts'),
     ],
 
+    // Empty paths are found on PATH (and in /usr/local/bin). The node_modules
+    // folder that holds Puppeteer saves a slow `npm root -g` call per render.
+    // An empty no_sandbox turns the Chrome sandbox off only in a container or
+    // as root.
     'browsershot' => [
-        'node_path' => env('BROWSERSHOT_NODE_PATH', '/usr/local/bin/node'),
-        'npm_path' => env('BROWSERSHOT_NPM_PATH', '/usr/local/bin/npm'),
+        'node_path' => env('BROWSERSHOT_NODE_PATH'),
+        'npm_path' => env('BROWSERSHOT_NPM_PATH'),
+        'node_modules_path' => env('BROWSERSHOT_NODE_MODULES_PATH', base_path('node_modules')),
+        'chrome_path' => env('BROWSERSHOT_CHROME_PATH'),
+        'no_sandbox' => env('BROWSERSHOT_NO_SANDBOX'),
         'instance' => env('BROWSERSHOT_INSTANCE', ''),
     ],
 

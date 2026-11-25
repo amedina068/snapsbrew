@@ -239,10 +239,20 @@ class ApiSpec
                     ['name' => 'webhook_url', 'type' => 'string|null', 'required' => true, 'description' => 'Callback URL for async completion.'],
                     ['name' => 'completed_at', 'type' => 'datetime|null', 'required' => true, 'description' => 'When rendering finished.'],
                     ['name' => 'last_error', 'type' => 'string|null', 'required' => true, 'description' => 'A fixed code, when status is failed: `render_failed`, or a webhook code (`webhook_address_refused`, `webhook_redirect_refused`, `webhook_unreachable`, `webhook_http_<status>`). Null otherwise.'],
+                    ['name' => 'warnings', 'type' => 'RenderWarning[]', 'required' => true, 'description' => 'Problems of the render that did not stop it, for example a font that the server could not load. An empty list when there are none.'],
                     ['name' => 'variants', 'type' => 'Variant[]|null', 'required' => true, 'schema' => ['type' => 'array', 'nullable' => true, 'items' => ['$ref' => 'Variant']], 'description' => 'The variants applied, as sent. Null when the request sent none.'],
                     ['name' => 'template_id', 'type' => 'string|null', 'required' => true, 'description' => 'Source template UUID. Null for a snap rendered from an inline design, which has no template.'],
                     ['name' => 'template_title', 'type' => 'string|null', 'required' => true, 'description' => 'Source template name. Null for a snap rendered from an inline design.'],
                     ['name' => 'created_at', 'type' => 'datetime', 'required' => true, 'description' => 'ISO-8601 creation timestamp.'],
+                ],
+            ],
+            'RenderWarning' => [
+                'description' => 'One problem of a render that did not stop it.',
+                'additionalProperties' => false,
+                'fields' => [
+                    ['name' => 'code', 'type' => 'string', 'required' => true, 'schema' => ['type' => 'string', 'enum' => ['font_unavailable']], 'description' => '`font_unavailable`: the server could not load the font, so the image can show a fallback font.'],
+                    ['name' => 'family', 'type' => 'string', 'required' => true, 'description' => 'The font family of the warning.'],
+                    ['name' => 'message', 'type' => 'string', 'required' => true, 'description' => 'A sentence that a person can read.'],
                 ],
             ],
             'Batch' => [
@@ -1443,10 +1453,10 @@ class ApiSpec
                     ],
                     'responses' => [
                         ['status' => 201, 'description' => 'Synchronous snap rendered. The body is the snap with no `data` wrapper. A collection request returns an array of snaps.', 'schema' => ['oneOf' => [['$ref' => 'Snap'], ['type' => 'array', 'items' => ['$ref' => 'Snap']]]], 'example' => [
-                            'id' => '9f1c2d3e', 'media_url' => 'https://snapsbrew.com/storage/snaps/9f1c2d3e.png', 'width' => 1200, 'height' => 630, 'type' => 'image', 'status' => 'completed', 'is_async' => false, 'webhook_url' => null, 'completed_at' => '2026-05-01T12:00:03Z', 'last_error' => null, 'variants' => [], 'template_id' => '141e8454-8aa1-420a-bd0b-18a85ba949a2', 'template_title' => 'Launch card', 'created_at' => '2026-05-01T12:00:00Z',
+                            'id' => '9f1c2d3e', 'media_url' => 'https://snapsbrew.com/storage/snaps/9f1c2d3e.png', 'width' => 1200, 'height' => 630, 'type' => 'image', 'status' => 'completed', 'is_async' => false, 'webhook_url' => null, 'completed_at' => '2026-05-01T12:00:03Z', 'last_error' => null, 'warnings' => [], 'variants' => [], 'template_id' => '141e8454-8aa1-420a-bd0b-18a85ba949a2', 'template_title' => 'Launch card', 'created_at' => '2026-05-01T12:00:00Z',
                         ]],
                         ['status' => 202, 'description' => 'Asynchronous snap queued. The body is the snap with no `data` wrapper. A collection request returns an array of snaps.', 'schema' => ['oneOf' => [['$ref' => 'Snap'], ['type' => 'array', 'items' => ['$ref' => 'Snap']]]], 'example' => [
-                            'id' => '9f1c2d3e', 'media_url' => '', 'width' => 1200, 'height' => 630, 'type' => 'image', 'status' => 'pending', 'is_async' => true, 'webhook_url' => 'https://example.com/hooks/snap', 'completed_at' => null, 'last_error' => null, 'variants' => [], 'template_id' => '141e8454-8aa1-420a-bd0b-18a85ba949a2', 'template_title' => 'Launch card', 'created_at' => '2026-05-01T12:00:00Z',
+                            'id' => '9f1c2d3e', 'media_url' => '', 'width' => 1200, 'height' => 630, 'type' => 'image', 'status' => 'pending', 'is_async' => true, 'webhook_url' => 'https://example.com/hooks/snap', 'completed_at' => null, 'last_error' => null, 'warnings' => [], 'variants' => [], 'template_id' => '141e8454-8aa1-420a-bd0b-18a85ba949a2', 'template_title' => 'Launch card', 'created_at' => '2026-05-01T12:00:00Z',
                         ]],
                         ['status' => 403, 'description' => 'The token lacks the api_requests ability, or a permission check refused the request.', 'schema' => ['$ref' => 'Error'], 'example' => ['message' => 'This action is unauthorized.']],
                         ['status' => 404, 'description' => 'The collection holds no templates.', 'schema' => ['$ref' => 'Error'], 'example' => ['message' => "The collection doesn't have any templates."]],
@@ -1910,7 +1920,7 @@ class ApiSpec
                         ],
                     ],
                     'responses' => [
-                        ['status' => 201, 'description' => 'Snap rendered (template form). The body is the snap with no `data` wrapper.', 'schema' => ['$ref' => 'Snap'], 'example' => ['id' => '9f1c2d3e', 'media_url' => 'https://snapsbrew.com/storage/snaps/9f1c2d3e.png', 'width' => 1200, 'height' => 630, 'type' => 'image', 'status' => 'completed', 'is_async' => false, 'webhook_url' => null, 'completed_at' => '2026-05-01T12:00:03Z', 'last_error' => null, 'variants' => [], 'template_id' => '141e8454', 'template_title' => 'Launch card', 'created_at' => '2026-05-01T12:00:00Z']],
+                        ['status' => 201, 'description' => 'Snap rendered (template form). The body is the snap with no `data` wrapper.', 'schema' => ['$ref' => 'Snap'], 'example' => ['id' => '9f1c2d3e', 'media_url' => 'https://snapsbrew.com/storage/snaps/9f1c2d3e.png', 'width' => 1200, 'height' => 630, 'type' => 'image', 'status' => 'completed', 'is_async' => false, 'webhook_url' => null, 'completed_at' => '2026-05-01T12:00:03Z', 'last_error' => null, 'warnings' => [], 'variants' => [], 'template_id' => '141e8454', 'template_title' => 'Launch card', 'created_at' => '2026-05-01T12:00:00Z']],
                         ['status' => 404, 'description' => 'The form does not exist, or the signature is not valid. A bad signature returns an empty `message`.', 'example' => ['message' => 'No query results for model [App\\Models\\Form].']],
                         ['status' => 422, 'description' => 'Collection form has no templates configured, or a layer value fails validation.', 'schema' => ['oneOf' => [['$ref' => 'Error'], ['$ref' => 'ValidationError']]], 'example' => ['message' => 'The form does not include any templates.']],
                         ['status' => 429, 'description' => 'Too many submissions from one IP address or for one form. Wait the number of seconds in `Retry-After`.', 'schema' => [

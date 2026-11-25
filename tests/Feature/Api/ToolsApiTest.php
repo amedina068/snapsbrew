@@ -41,7 +41,7 @@ class ToolsApiTest extends TestCase
     {
         $browsershot = Mockery::mock('overload:'.Browsershot::class);
         $fluent = [
-            'html', 'url', 'setRemoteInstance', 'setOption', 'setNodeBinary', 'setNpmBinary',
+            'html', 'url', 'setRemoteInstance', 'setOption', 'setNodeBinary', 'setNpmBinary', 'setNodeModulePath', 'setChromePath', 'noSandbox',
             'windowSize', 'waitUntilNetworkIdle', 'deviceScaleFactor',
             'fullPage', 'preventUnsuccessfulResponse', 'showBackground',
             'margins', 'paperSize', 'pages',
