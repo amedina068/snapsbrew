@@ -25,6 +25,19 @@ if [ "${RENDER_DRIVER:-browsershot}" != "browserless" ] && [ "${SNAPSBREW_CHROMI
     wait_for "http://127.0.0.1:${SNAPSBREW_CHROMIUM_PORT:-9222}/json/version" "Chromium" || exec /command/s6-pause
 fi
 
+# The first start queues the preview images of the onboarding templates. A
+# job can write a log line, so wait up to 90 seconds until the database queue
+# is empty. Then the ready line stays the last line of the boot.
+if [ "${QUEUE_CONNECTION:-sync}" = "database" ]; then
+    tries=0
+    while [ "$tries" -lt 90 ]; do
+        pending="$(php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo Illuminate\Support\Facades\DB::table(config("queue.connections.database.table", "jobs"))->count();' 2>/dev/null)"
+        [ "${pending:-0}" = "0" ] && break
+        tries=$((tries + 1))
+        sleep 1
+    done
+fi
+
 # The age of process 1 is the time since the container started. The start
 # time that 05-snapsbrew-secrets.sh wrote is the second choice.
 seconds="$(ps -o etimes= -p 1 2>/dev/null | tr -d ' ')"
