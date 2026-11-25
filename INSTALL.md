@@ -62,6 +62,41 @@ curl -fsSL https://raw.githubusercontent.com/amedina068/snapsbrew/main/install.s
 
 You can run the installer again. It replaces the container and keeps the volume.
 
+### MySQL mode (only if the human asks for it)
+
+The default database is SQLite. Use MySQL 8.4, Redis and Browserless only if the human asks for them. Do these steps instead of the installer:
+
+```bash
+git clone https://github.com/amedina068/snapsbrew.git
+cd snapsbrew
+cp .env.docker.example .env
+cat >> .env <<EOF
+COMPOSE_PROFILES=mysql
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=snapsbrew
+DB_USERNAME=snapsbrew
+DB_PASSWORD=$(openssl rand -hex 24)
+REDIS_HOST=redis
+REDIS_PASSWORD=null
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+RENDER_DRIVER=browserless
+BROWSERLESS_URL=http://browserless:3000
+RENDER_ASSET_URL=http://web:8080
+BROWSERLESS_TOKEN=$(openssl rand -hex 24)
+EOF
+docker compose up -d --build
+```
+
+- For a domain, add `APP_DOMAIN=<domain>` to `.env` before `docker compose up`. Also add `"80:80"` and `"443:443"` to the `ports` of the `web` service in `docker-compose.yml`.
+- Run `docker compose ps` every 10 seconds. Continue when the `web` service shows `healthy`. The first start takes about 90 seconds.
+- If `web` is not `healthy` after 5 minutes, run `docker compose logs --tail 50 web`. Report the last error line.
+- In the next steps, replace `docker exec snapsbrew` with `docker compose exec -T web`. Run it in the `snapsbrew` folder.
+- Never run `docker compose down -v`. It deletes the database volume.
+
 ## 4. Create the owner and an API token
 
 ```bash

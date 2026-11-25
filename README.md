@@ -67,16 +67,50 @@ To show the line again, run `docker exec snapsbrew php artisan snapsbrew:mcp:con
 
 ## MySQL, Redis and Browserless
 
-The default database is SQLite in the `/data` volume. It is enough for one server. For MySQL 8.4, Redis and a separate Browserless renderer, use the Compose file:
+The default database is SQLite in the `/data` volume. It is enough for one server. The Compose file has a `mysql` profile that adds MySQL 8.4, Redis and a separate Browserless renderer. In this mode, the web container runs Horizon.
 
-```bash
-git clone https://github.com/amedina068/snapsbrew.git
-cd snapsbrew
-cp .env.example .env
-docker compose --profile mysql up -d
-```
+1. Clone the repository:
 
-Set `APP_DOMAIN` in `.env` before you start the stack. Read [Install with Docker](https://snapsbrew.com/docs/getting-started/installation-docker) for each service and each volume.
+   ```bash
+   git clone https://github.com/amedina068/snapsbrew.git
+   cd snapsbrew
+   ```
+
+2. Make the `.env` file. The command copies `.env.docker.example` and adds its MySQL block with two new passwords:
+
+   ```bash
+   cp .env.docker.example .env
+   cat >> .env <<EOF
+   COMPOSE_PROFILES=mysql
+   DB_CONNECTION=mysql
+   DB_HOST=mysql
+   DB_PORT=3306
+   DB_DATABASE=snapsbrew
+   DB_USERNAME=snapsbrew
+   DB_PASSWORD=$(openssl rand -hex 24)
+   REDIS_HOST=redis
+   REDIS_PASSWORD=null
+   CACHE_DRIVER=redis
+   QUEUE_CONNECTION=redis
+   SESSION_DRIVER=redis
+   RENDER_DRIVER=browserless
+   BROWSERLESS_URL=http://browserless:3000
+   RENDER_ASSET_URL=http://web:8080
+   BROWSERLESS_TOKEN=$(openssl rand -hex 24)
+   EOF
+   ```
+
+3. For a domain, add `APP_DOMAIN=images.example.com` to `.env`. Then add `"80:80"` and `"443:443"` to the `ports` of the `web` service in `docker-compose.yml`. For localhost, skip this step.
+4. Build and start the stack:
+
+   ```bash
+   docker compose up -d --build
+   docker compose logs -f web
+   ```
+
+5. Wait for the line `Snapsbrew is ready`. The next line is the setup URL. Open it and create the owner account.
+
+On the first start, the web container waits for MySQL and loads the schema. This takes about 90 seconds. `COMPOSE_PROFILES=mysql` in `.env` starts the MySQL, Redis and Browserless containers, so `docker compose` needs no `--profile` flag. Read [Install with Docker](https://snapsbrew.com/docs/getting-started/installation-docker) for each service and each volume.
 
 ## Upgrade
 
