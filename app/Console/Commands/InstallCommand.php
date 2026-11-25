@@ -105,7 +105,7 @@ class InstallCommand extends Command
 
     private function promote(string $email): int
     {
-        $user = User::query()->where('email', $email)->first();
+        $user = User::query()->where('email', strtolower(trim($email)))->first();
 
         if (! $user) {
             $this->components->error("No user has the email {$email}.");
@@ -125,7 +125,7 @@ class InstallCommand extends Command
      */
     private function demote(string $email): int
     {
-        $user = User::query()->where('email', $email)->first();
+        $user = User::query()->where('email', strtolower(trim($email)))->first();
 
         if (! $user) {
             $this->components->error("No user has the email {$email}.");

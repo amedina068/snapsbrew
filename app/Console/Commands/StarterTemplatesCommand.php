@@ -62,7 +62,7 @@ class StarterTemplatesCommand extends Command
     private function resolveUser(): ?User
     {
         if ($email = $this->option('user')) {
-            $user = User::query()->where('email', $email)->first();
+            $user = User::query()->where('email', strtolower(trim($email)))->first();
 
             if (! $user) {
                 $this->components->error("No user has the email {$email}.");
