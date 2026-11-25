@@ -112,8 +112,9 @@ Read these fields from `data`:
 | `status` | `created` for a new owner. `exists` if an owner exists. Both exit with `0`. |
 | `login_url` | A one-time login link for the human. |
 | `token` | The API token for the MCP server and the REST API. |
-| `connect.claude` | The `claude mcp add` command. |
-| `connect.codex` | The `codex mcp add` command. |
+| `connect.env` | The `export SNAPSBREW_TOKEN=...` line. It is the only line that holds the token. |
+| `connect.claude` | The `claude mcp add` command. It reads the token from `SNAPSBREW_TOKEN`. |
+| `connect.codex` | The `codex mcp add` command. It reads the token from `SNAPSBREW_TOKEN`. |
 
 - If `status` is `exists`, the command makes no new owner and no login link. Ask the human to log in with the existing account.
 - The command does not accept `--password`. The owner sets a password after the first login.
@@ -136,12 +137,15 @@ For a short summary of the instance, run `snapsbrew:status --json --no-interacti
 
 ## 6. Connect the MCP server
 
-Run the `connect.claude` command on the computer where the agent runs, not in the container. For Codex, use `connect.codex`.
+Run these commands on the computer where the agent runs, not in the container. First run the `connect.env` line. Then run the `connect.claude` line. For Codex, run `connect.codex` instead of `connect.claude`.
 
 ```bash
+export SNAPSBREW_TOKEN='<token>'
 claude mcp add --transport http snapsbrew https://images.example.com/mcp \
-  --header "Authorization: Bearer <token>"
+  --header "Authorization: Bearer ${SNAPSBREW_TOKEN}"
 ```
+
+Codex reads `SNAPSBREW_TOKEN` each time that it starts. Keep the variable in the environment of Codex.
 
 To show the command again, or to make a new token:
 
@@ -160,7 +164,7 @@ Give the human these items:
 
 - The app URL: `https://<domain>`, or `http://localhost:8080`.
 - The `login_url` from step 4. It works one time.
-- The `connect.claude` command, if the human runs the agent on another computer.
+- The `connect.env` and `connect.claude` lines, if the human runs the agent on another computer.
 - The results of step 5 that are not `ok`.
 - This warning: "Back up the `snapsbrew` volume. It holds the database, the images and `APP_KEY`."
 

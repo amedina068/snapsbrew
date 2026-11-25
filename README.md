@@ -56,11 +56,12 @@ Paste this prompt into Claude Code, Codex or another agent that has a shell on t
 Read https://raw.githubusercontent.com/amedina068/snapsbrew/main/INSTALL.md and install Snapsbrew on this server.
 ```
 
-The agent installs the app, creates the owner and makes an API token. Its last step gives you a line that connects your agent to the MCP server of the instance:
+The agent installs the app, creates the owner and makes an API token. Its last step gives you two lines that connect your agent to the MCP server of the instance. The first line exports the token. The second line reads the token from that variable, so the token is not in the command:
 
 ```bash
+export SNAPSBREW_TOKEN='<token>'
 claude mcp add --transport http snapsbrew https://images.example.com/mcp \
-  --header "Authorization: Bearer <token>"
+  --header "Authorization: Bearer ${SNAPSBREW_TOKEN}"
 ```
 
 To show the line again, run `docker exec snapsbrew php artisan snapsbrew:mcp:connect --client=claude`.
