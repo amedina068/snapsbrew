@@ -122,4 +122,16 @@ return [
 
     'import_max_rows' => (int) env('SNAPSBREW_IMPORT_MAX_ROWS', 5000),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Version
+    |--------------------------------------------------------------------------
+    |
+    | The release of this instance. The Docker image sets SNAPSBREW_VERSION at
+    | build time. `snapsbrew:status` and the instance-admin MCP server show it.
+    |
+    */
+
+    'version' => env('SNAPSBREW_VERSION', 'dev'),
+
 ];

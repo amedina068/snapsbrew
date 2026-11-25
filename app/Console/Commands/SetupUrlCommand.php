@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\WritesJsonOutput;
 use App\Support\InstanceSetup;
 use Illuminate\Console\Command;
 
@@ -9,24 +10,30 @@ use Illuminate\Console\Command;
  * Prints the URL of the web setup page while the instance has no account.
  *
  * The URL holds the setup token. The Docker image prints it to the log of the
- * web container when the container starts.
+ * web container when the container starts. The entrypoint reads the text
+ * output, so keep it as one line with the URL.
  */
 class SetupUrlCommand extends Command
 {
-    protected $signature = 'snapsbrew:setup-url';
+    use WritesJsonOutput;
+
+    protected $signature = 'snapsbrew:setup-url
+        {--json : Write one JSON object to stdout}';
 
     protected $description = 'Print the URL of the setup page that creates the owner account.';
 
     public function handle(): int
     {
         if (! InstanceSetup::isNeeded()) {
-            $this->components->info('An account already exists. The setup page is closed.');
+            $this->note('An account already exists. The setup page is closed.');
 
-            return self::SUCCESS;
+            return $this->respond(self::EXIT_OK, ['setup_needed' => false, 'url' => null]);
         }
 
-        $this->line(InstanceSetup::url());
+        if (! $this->wantsJson()) {
+            $this->line(InstanceSetup::url());
+        }
 
-        return self::SUCCESS;
+        return $this->respond(self::EXIT_OK, ['setup_needed' => true, 'url' => InstanceSetup::url()]);
     }
 }
