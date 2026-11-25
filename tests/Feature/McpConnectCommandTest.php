@@ -55,7 +55,7 @@ class McpConnectCommandTest extends TestCase
         $this->assertSame(['type' => 'http', 'url' => url('/mcp'), 'headers' => ['Authorization' => 'Bearer ${SNAPSBREW_TOKEN}']], $generic['data']['config']['mcpServers']['snapsbrew']);
     }
 
-    public function test_token_new_creates_a_product_token_for_the_owner_and_puts_it_in_the_command()
+    public function test_token_new_puts_the_token_only_in_the_export_line()
     {
         $owner = User::factory()->create(['is_owner' => true]);
 
@@ -66,8 +66,29 @@ class McpConnectCommandTest extends TestCase
         $this->assertSame('mcp-claude', $token['name']);
         $this->assertSame(['api_requests'], $token['abilities']);
         $this->assertSame($owner->id, $token['user']['id']);
-        $this->assertStringContainsString('Bearer '.$token['value'].'"', $json['data']['command']);
+        $this->assertSame('claude mcp add --transport http snapsbrew '.url('/mcp').' --header "Authorization: Bearer ${SNAPSBREW_TOKEN}"', $json['data']['command']);
+        $this->assertStringNotContainsString($token['value'], $json['data']['command']);
         $this->assertSame("export SNAPSBREW_TOKEN='{$token['value']}'", $json['data']['env']);
+    }
+
+    public function test_token_new_keeps_the_token_out_of_the_cursor_config()
+    {
+        User::factory()->create(['is_owner' => true]);
+
+        [, $json] = $this->runJson('snapsbrew:mcp:connect', ['--client' => 'cursor', '--token' => 'new']);
+
+        $this->assertSame(['url' => url('/mcp'), 'headers' => ['Authorization' => 'Bearer ${env:SNAPSBREW_TOKEN}']], $json['data']['config']['mcpServers']['snapsbrew']);
+        $this->assertSame("export SNAPSBREW_TOKEN='{$json['data']['token']['value']}'", $json['data']['env']);
+    }
+
+    public function test_text_output_with_a_new_token_prints_the_export_line_first()
+    {
+        User::factory()->create(['is_owner' => true]);
+
+        $this->artisan('snapsbrew:mcp:connect', ['--client' => 'claude', '--token' => 'new'])
+            ->expectsOutputToContain("export SNAPSBREW_TOKEN='")
+            ->expectsOutputToContain('--header "Authorization: Bearer ${SNAPSBREW_TOKEN}"')
+            ->assertSuccessful();
     }
 
     public function test_bad_input_exits_two()

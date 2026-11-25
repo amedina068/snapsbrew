@@ -73,11 +73,12 @@ class InstallCommandJsonTest extends TestCase
         $connect = $json['data']['connect'];
         $this->assertSame(['mcp_url', 'token_env', 'env', 'claude', 'codex', 'claude_oauth'], array_keys($connect));
         $this->assertSame(url('/mcp'), $connect['mcp_url']);
-        $this->assertSame('claude mcp add --transport http snapsbrew '.url('/mcp').' --header "Authorization: Bearer '.$token['value'].'"', $connect['claude']);
+        $this->assertSame('claude mcp add --transport http snapsbrew '.url('/mcp').' --header "Authorization: Bearer ${SNAPSBREW_TOKEN}"', $connect['claude']);
+        $this->assertStringNotContainsString($token['value'], $connect['claude']);
         $this->assertSame('codex mcp add snapsbrew --url '.url('/mcp').' --bearer-token-env-var SNAPSBREW_TOKEN', $connect['codex']);
         $this->assertSame("export SNAPSBREW_TOKEN='{$token['value']}'", $connect['env']);
 
-        // The token in the claude line opens the MCP server.
+        // The token of the export line opens the MCP server.
         $this->withHeader('Authorization', 'Bearer '.$token['value'])
             ->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/call', 'params' => ['name' => 'whoami', 'arguments' => []]])
             ->assertOk()

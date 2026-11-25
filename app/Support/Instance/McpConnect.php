@@ -6,9 +6,10 @@ namespace App\Support\Instance;
  * The commands and the config that connect an MCP client to `/mcp`.
  *
  * `snapsbrew:install --with-token` and `snapsbrew:mcp:connect` print these
- * lines. When the token is known, the Claude line carries it and runs as it
- * is. When the token is not known, each line reads `SNAPSBREW_TOKEN` from the
- * environment.
+ * lines. The Claude, Codex and Cursor lines read the token from the
+ * `SNAPSBREW_TOKEN` environment variable, so the token is not in the command
+ * text or in the shell history. When the token is known, the `env` line
+ * exports it. Only the generic `json` config carries the token itself.
  *
  * Codex syntax (codex-cli 0.166): `codex mcp add <name> --url <url>
  * --bearer-token-env-var <VAR>`. Codex reads the token from that variable
@@ -38,7 +39,7 @@ class McpConnect
             'mcp_url' => self::url(),
             'token_env' => self::TOKEN_ENV,
             'env' => self::envLine($token),
-            'claude' => self::claude($token),
+            'claude' => self::claude(),
             'codex' => self::codex(),
             'claude_oauth' => self::claudeOAuth(),
         ];
@@ -60,7 +61,7 @@ class McpConnect
 
         return $data + match ($client) {
             'claude' => [
-                'command' => self::claude($token),
+                'command' => self::claude(),
                 'oauth' => [
                     'command' => self::claudeOAuth(),
                     'available' => self::oauthAvailableForLocalClients(),
@@ -77,7 +78,7 @@ class McpConnect
                 'path' => '~/.cursor/mcp.json',
                 'config' => ['mcpServers' => [self::SERVER_NAME => [
                     'url' => self::url(),
-                    'headers' => ['Authorization' => 'Bearer '.($token ?? '${env:'.self::TOKEN_ENV.'}')],
+                    'headers' => ['Authorization' => 'Bearer ${env:'.self::TOKEN_ENV.'}'],
                 ]]],
             ],
             // json: a generic `mcpServers` entry for any client.
@@ -91,12 +92,10 @@ class McpConnect
         };
     }
 
-    public static function claude(?string $token): string
+    public static function claude(): string
     {
-        $value = $token ?? '${'.self::TOKEN_ENV.'}';
-
         return 'claude mcp add --transport http '.self::SERVER_NAME.' '.self::url()
-            .' --header "Authorization: Bearer '.$value.'"';
+            .' --header "Authorization: Bearer ${'.self::TOKEN_ENV.'}"';
     }
 
     public static function claudeOAuth(): string
@@ -119,7 +118,7 @@ class McpConnect
 
     private static function envLine(?string $token): ?string
     {
-        return $token === null ? null : 'export '.self::TOKEN_ENV."='".$token."'";
+        return $token === null ? null : 'export '.self::TOKEN_ENV.'='.escapeshellarg($token);
     }
 
     /**

@@ -11,9 +11,9 @@ use Illuminate\Console\Command;
 /**
  * Prints the command or the config that connects an MCP client to `/mcp`.
  *
- * Without `--token=new`, the output reads the token from SNAPSBREW_TOKEN.
- * With `--token=new`, the command creates a token for the user and puts it in
- * the output.
+ * The command lines read the token from SNAPSBREW_TOKEN. With `--token=new`,
+ * the command creates a token for the user and gives it only in the `env`
+ * export line and in the `token` object.
  */
 class McpConnectCommand extends Command
 {

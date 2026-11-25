@@ -35,6 +35,8 @@ class AgentOperationsDocsTest extends TestCase
             $this->assertStringContainsString('## Install with an agent', $body, $path);
             $this->assertStringContainsString('## Operate this instance', $body, $path);
             $this->assertStringContainsString('php artisan mcp:start snapsbrew-admin', $body, $path);
+            $this->assertStringContainsString('Run the `connect.env` line first', $body, $path);
+            $this->assertStringContainsString('--header "Authorization: Bearer ${SNAPSBREW_TOKEN}"', $body, $path);
         }
     }
 }

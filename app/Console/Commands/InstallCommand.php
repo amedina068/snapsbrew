@@ -174,7 +174,8 @@ class InstallCommand extends Command
                 $this->line("  API token \"{$data['token']['name']}\": {$data['token']['value']}");
                 $this->line('  Keep this token now. The command does not show it again.');
                 $this->line('');
-                $this->line('  Connect Claude Code:');
+                $this->line('  Connect Claude Code. Export the token, then add the server:');
+                $this->line('  '.$data['connect']['env']);
                 $this->line('  '.$data['connect']['claude']);
             }
 
