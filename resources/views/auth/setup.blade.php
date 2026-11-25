@@ -14,6 +14,51 @@
     ]"
     :home-link="false"
   >
+    @unless ($tokenIsValid)
+      <h1 class="mt-10 font-display text-4xl tracking-tight text-atomic-ink sm:text-5xl">
+        Snapsbrew is not set up yet
+      </h1>
+      <p class="mt-3 text-lg text-atomic-ink/70">
+        To create the owner account, open the setup URL. The URL has a secret token. The token proves that you operate this server.
+      </p>
+
+      @if ($tokenGiven)
+        <p class="mt-6 rounded-xl border-[3px] border-atomic-ink bg-atomic-coral/15 p-4 font-semibold text-atomic-ink" role="alert">
+          This setup token is not correct. Copy the full setup URL again.
+        </p>
+      @endif
+
+      <div class="mt-8 rounded-xl border-[3px] border-atomic-ink bg-atomic-mint p-5 text-atomic-ink shadow-atomic">
+        <h2 class="font-display text-lg uppercase tracking-wide">Get the setup URL</h2>
+        <p class="mt-2 text-sm">The last line of the container log is the setup URL. Run one of these commands on the server:</p>
+        <ul class="mt-3 space-y-3 text-sm">
+          <li>
+            <span class="block font-semibold">Docker</span>
+            <code class="mt-1 block rounded-lg bg-atomic-ink px-3 py-2 font-mono text-atomic-cream break-all">docker logs snapsbrew</code>
+          </li>
+          <li>
+            <span class="block font-semibold">Docker Compose</span>
+            <code class="mt-1 block rounded-lg bg-atomic-ink px-3 py-2 font-mono text-atomic-cream break-all">docker compose logs web</code>
+          </li>
+          <li>
+            <span class="block font-semibold">Without Docker</span>
+            <code class="mt-1 block rounded-lg bg-atomic-ink px-3 py-2 font-mono text-atomic-cream break-all">php artisan snapsbrew:setup-url</code>
+          </li>
+        </ul>
+        <p class="mt-3 text-sm">If your container has another name, use that name in place of <code class="font-mono">snapsbrew</code>.</p>
+      </div>
+
+      <form method="GET" action="/setup" class="mt-8 space-y-3">
+        <label for="token" class="{{ $labelClass }}">Or paste the setup token</label>
+        <input id="token" name="token" type="text" autocomplete="off" spellcheck="false" required class="{{ $inputClass }} font-mono">
+        <button
+          type="submit"
+          class="flex w-full items-center justify-center gap-2 rounded-full border-[3px] border-atomic-ink bg-atomic-cream px-7 py-3 font-sans font-bold text-atomic-ink shadow-atomic transition hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-[3px_3px_0_0_#211d1a] focus-visible:outline-solid focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-atomic-coral"
+        >
+          Continue <span aria-hidden="true">&rarr;</span>
+        </button>
+      </form>
+    @else
     <h1 class="mt-10 font-display text-4xl tracking-tight text-atomic-ink sm:text-5xl">
       Set up your <span class="font-script font-normal text-atomic-coral">instance</span>
     </h1>
@@ -26,27 +71,7 @@
     <form method="POST" action="/setup" class="mt-8 space-y-6">
       @csrf
 
-      <div>
-        <label for="token" class="{{ $labelClass }}">Setup token</label>
-        <input
-          id="token"
-          name="token"
-          type="text"
-          autocomplete="off"
-          spellcheck="false"
-          value="{{ old('token', $token) }}"
-          required
-          aria-describedby="token-help"
-          class="{{ $inputClass }} font-mono"
-        >
-        <div id="token-help" class="mt-2 rounded-xl border-[3px] border-atomic-ink bg-atomic-mint p-4 text-sm text-atomic-ink">
-          The setup token proves that you operate this server. The full setup URL contains the token. Find the URL in one of these places:
-          <ul class="mt-2 list-inside list-disc">
-            <li>The log of the web container: <code class="font-mono break-all">docker compose logs web</code></li>
-            <li>The output of <code class="font-mono break-all">php artisan snapsbrew:setup-url</code></li>
-          </ul>
-        </div>
-      </div>
+      <input type="hidden" name="token" value="{{ $token }}">
 
       <div>
         <label for="name" class="{{ $labelClass }}">Your name</label>
@@ -98,5 +123,6 @@
         Create the owner account <span aria-hidden="true">&rarr;</span>
       </button>
     </form>
+    @endunless
   </x-auth.split>
 </x-auth-layout>

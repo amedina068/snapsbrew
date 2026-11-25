@@ -1,7 +1,11 @@
 <article class="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition-colors hover:border-rose-300">
   <div class="relative bg-slate-50">
     <a href="/templates/{{ $template->uuid }}" class="focus-ring block" tabindex="-1">
-      <img src="{{ $template->previewImage }}" class="h-56 w-full object-contain" alt="Preview of {{ $template->title }}">
+      @if ($template->previewImage)
+        <img src="{{ $template->previewImage }}" class="h-56 w-full object-contain" alt="Preview of {{ $template->title }}">
+      @else
+        <span class="flex h-56 w-full items-center justify-center px-6 text-center text-sm text-gray-500">The preview is on its way.</span>
+      @endif
     </a>
     <x-ui.badge class="absolute top-3 left-3 bg-white/90">{{ $template->readableSize }}</x-ui.badge>
     <button
