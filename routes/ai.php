@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Middleware\EnsureInstanceAdminAccess;
 use App\Http\Middleware\EnsureMcpAccess;
 use App\Http\Middleware\LimitOAuthClientRegistration;
 use App\Http\Middleware\ValidateCreativePackageEnvelope;
+use App\Mcp\Servers\InstanceAdminServer;
 use App\Mcp\Servers\SnapsbrewServer;
 use Illuminate\Support\Facades\Route;
 use Laravel\Mcp\Facades\Mcp;
@@ -33,6 +35,28 @@ use Laravel\Mcp\Server\Http\Controllers\OAuthRegisterController;
 | Throttled with the `mcp` limiter.
 |
 */
+
+/*
+|--------------------------------------------------------------------------
+| Instance-Admin MCP Server
+|--------------------------------------------------------------------------
+|
+| The operator server runs over stdio. An agent starts it on the server:
+|
+|   ssh host docker exec -i <container> php artisan mcp:start snapsbrew-admin
+|
+| It does not depend on MCP_ENABLED, which switches off the product server
+| only. The HTTP route exists only when MCP_ADMIN_ENABLED=true. It takes
+| Sanctum alone, never Passport, because an OAuth client never gets the
+| `instance_admin` ability.
+|
+*/
+Mcp::local(InstanceAdminServer::HANDLE, InstanceAdminServer::class);
+
+if (config('mcp.admin_enabled')) {
+    Mcp::web('/mcp/admin', InstanceAdminServer::class)
+        ->middleware(['auth:sanctum', EnsureInstanceAdminAccess::class, 'throttle:mcp']);
+}
 
 // MCP_ENABLED=false removes the server and its OAuth routes (config/mcp.php).
 if (! config('mcp.enabled')) {

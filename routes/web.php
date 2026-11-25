@@ -10,6 +10,7 @@ use App\Http\Controllers\EmbeddedFormController;
 use App\Http\Controllers\FontController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\LoginLinkController;
 use App\Http\Controllers\OAuthConnectionController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ScreenshotController;
@@ -39,6 +40,12 @@ Route::middleware(['guest', 'throttle:10,1'])->group(function () {
     Route::get('setup', [SetupController::class, 'show']);
     Route::post('setup', [SetupController::class, 'store']);
 });
+
+// The one-time login link that `snapsbrew:install` returns.
+Route::get('login/link/{user}/{nonce}', LoginLinkController::class)
+    ->whereNumber('user')
+    ->middleware('throttle:10,1')
+    ->name('login.link');
 
 Route::middleware(['throttle:signed-url', 'signedUrlMiddleware'])->get('signed-url/image.jpg', [SignedUrlController::class, 'store']);
 

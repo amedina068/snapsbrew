@@ -45,6 +45,7 @@ class LlmsTxtGenerator
         $out[] = '- [Agent skill]('.$site.'/skill.md): the recommended tool order for the MCP server.';
         $out[] = '- [MCP guide]('.$site.'/documentation/guides/mcp): how to connect an agent.';
         $out[] = '';
+        array_push($out, ...AgentOperations::lines());
 
         // Privacy and terms stay outside a section. A directory submission checks
         // for a privacy policy, and `## Optional` tells a reader to skip it. A

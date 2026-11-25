@@ -76,4 +76,19 @@ return [
 
     'authorization_server' => env('MCP_AUTHORIZATION_SERVER') ?: null,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Instance-Admin Server over HTTP
+    |--------------------------------------------------------------------------
+    |
+    | The instance-admin MCP server runs over stdio by default:
+    | `php artisan mcp:start snapsbrew-admin`. When this is true, the app also
+    | serves it at `/mcp/admin`. That route accepts only an owner with a token
+    | that carries the `instance_admin` ability and expires in 7 days or less.
+    | Create the token with `php artisan snapsbrew:token:create`.
+    |
+    */
+
+    'admin_enabled' => (bool) env('MCP_ADMIN_ENABLED', false),
+
 ];

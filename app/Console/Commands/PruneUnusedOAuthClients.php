@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
+use Laravel\Passport\Client;
 use Laravel\Passport\Passport;
 
 /**
@@ -25,21 +27,32 @@ class PruneUnusedOAuthClients extends Command
     {
         $deleted = 0;
 
-        Passport::clientModel()::query()
-            ->whereNull('secret')
-            ->whereNull('owner_id')
-            ->where('created_at', '<', now()->subDays(self::UNUSED_DAYS))
-            ->whereDoesntHave('tokens')
-            ->chunkById(500, function ($clients) use (&$deleted) {
-                foreach ($clients as $client) {
-                    $client->authCodes()->delete();
-                    $client->delete();
-                    $deleted++;
-                }
-            });
+        self::unusedClients()->chunkById(500, function ($clients) use (&$deleted) {
+            foreach ($clients as $client) {
+                $client->authCodes()->delete();
+                $client->delete();
+                $deleted++;
+            }
+        });
 
         $this->info("Deleted {$deleted} unused OAuth client(s).");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The clients that this command deletes. The `prune-oauth-clients` tool
+     * of the instance-admin MCP server counts them for its preview.
+     */
+    /**
+     * @return Builder<Client>
+     */
+    public static function unusedClients(): Builder
+    {
+        return Passport::clientModel()::query()
+            ->whereNull('secret')
+            ->whereNull('owner_id')
+            ->where('created_at', '<', now()->subDays(self::UNUSED_DAYS))
+            ->whereDoesntHave('tokens');
     }
 }
