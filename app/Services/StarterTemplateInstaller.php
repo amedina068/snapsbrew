@@ -33,9 +33,12 @@ class StarterTemplateInstaller
     ) {}
 
     /**
+     * With $renderPreviews false, the installer does not render the preview
+     * image of each template. The caller then queues GenerateTemplatePreview.
+     *
      * @return array{created: list<Template>, skipped: list<string>, preview_failures: list<string>}
      */
-    public function install(User $user): array
+    public function install(User $user, bool $renderPreviews = true): array
     {
         if (! $user->company_id) {
             throw new InvalidArgumentException("The user {$user->email} has no company.");
@@ -48,13 +51,13 @@ class StarterTemplateInstaller
         // Two runs for one company at the same time must not both create a
         // template. The lock makes the second run wait, and then it skips.
         return Cache::lock("starter-templates:company:{$user->company_id}", 300)
-            ->block(60, fn () => $this->installMissing($user));
+            ->block(60, fn () => $this->installMissing($user, $renderPreviews));
     }
 
     /**
      * @return array{created: list<Template>, skipped: list<string>, preview_failures: list<string>}
      */
-    private function installMissing(User $user): array
+    private function installMissing(User $user, bool $renderPreviews): array
     {
         $definitions = StarterTemplates::all();
 
@@ -76,7 +79,7 @@ class StarterTemplateInstaller
             [$template, $versionPreviewRendered] = $this->create($user, $definition);
             $result['created'][] = $template;
 
-            if (! $this->renderPreview($template) || ! $versionPreviewRendered) {
+            if (! $versionPreviewRendered || ($renderPreviews && ! $this->renderPreview($template))) {
                 $result['preview_failures'][] = $definition['title'];
             }
         }
