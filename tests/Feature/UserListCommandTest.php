@@ -22,15 +22,15 @@ class UserListCommandTest extends TestCase
         $member = User::factory()->create([
             'name' => 'Max Member',
             'email' => 'member@example.com',
-            'company_id' => Company::factory()->create(['name' => 'Max Studio']),
+            'company_id' => $owner->company_id,
         ]);
 
         $this->artisan('snapsbrew:user:list')
             ->expectsTable(
-                ['ID', 'Name', 'Email', 'Company', 'Owner', 'Created'],
+                ['ID', 'Name', 'Email', 'Company', 'Company role', 'Owner', 'Created'],
                 [
-                    [$owner->id, 'Olive Owner', 'owner@example.com', 'Olive Studio', 'yes', $owner->created_at->toDateString()],
-                    [$member->id, 'Max Member', 'member@example.com', 'Max Studio', 'no', $member->created_at->toDateString()],
+                    [$owner->id, 'Olive Owner', 'owner@example.com', 'Olive Studio', 'owner', 'yes', $owner->created_at->toDateString()],
+                    [$member->id, 'Max Member', 'member@example.com', 'Olive Studio', 'member', 'no', $member->created_at->toDateString()],
                 ],
             )
             ->assertSuccessful();

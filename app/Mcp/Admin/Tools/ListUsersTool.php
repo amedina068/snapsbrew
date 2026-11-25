@@ -18,7 +18,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('list-users')]
 #[Title('List users')]
-#[Description('Lists the users of this instance: id, name, email, company, role, owner flag, deactivated flag and creation date. Give search to filter by name or email.')]
+#[Description('Lists the users of this instance: id, name, email, company, company role (owner or member), role, instance owner flag, deactivated flag and creation date. Give search to filter by name or email.')]
 #[IsReadOnly]
 #[IsDestructive(false)]
 #[IsIdempotent]

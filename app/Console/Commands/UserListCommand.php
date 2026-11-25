@@ -42,12 +42,13 @@ class UserListCommand extends Command
         }
 
         $this->table(
-            ['ID', 'Name', 'Email', 'Company', 'Owner', 'Created'],
+            ['ID', 'Name', 'Email', 'Company', 'Company role', 'Owner', 'Created'],
             $users->map(fn (User $user) => [
                 $user->id,
                 $user->name,
                 $user->email,
                 $user->company?->name,
+                $user->company_role,
                 $user->isOwner() ? 'yes' : 'no',
                 $user->created_at?->toDateString(),
             ]),
@@ -70,6 +71,7 @@ class UserListCommand extends Command
             'company' => ($company = $user->company) instanceof Company
                 ? ['id' => $company->id, 'name' => $company->name]
                 : null,
+            'company_role' => $user->company_role,
             'role' => $user->role,
             'is_owner' => $user->isOwner(),
             'deactivated' => $user->isDeactivated(),

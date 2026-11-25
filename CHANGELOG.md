@@ -27,7 +27,7 @@ This file lists the changes to the code for each release. The release notes for 
 - When `MAIL_MAILER` is `log`, the invitation pages say "Mail is not set up. Send this link yourself." The onboarding wizard shows the links too.
 - `/setup` without a correct token shows how to get the setup URL (`docker logs snapsbrew` or `php artisan snapsbrew:setup-url`).
 - `install.sh` installs Snapsbrew on a server with Docker in one command. `INSTALL.md` gives the same steps to an AI agent.
-- Each user has a role in the company: `owner` or `member`. **Account > Users** shows the role. An owner can make a member an owner, or make another owner a member. The last owner of a company stays an owner.
+- Each user has a role in the company: `owner` or `member`. **Account > Users** and **Admin > Users** show the role. `snapsbrew:user:list` and the `list-users` admin tool return it as `company_role`. An owner can make a member an owner, or make another owner a member. The last owner of a company stays an owner.
 
 ### Changed
 
