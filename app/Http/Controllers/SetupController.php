@@ -51,7 +51,7 @@ class SetupController extends Controller
 
         if (! InstanceSetup::tokenMatches($input['token'])) {
             throw ValidationException::withMessages([
-                'token' => 'The setup token is not correct. Copy the token from the log of the web container.',
+                'token' => 'The setup token is not correct. Copy the setup URL from the container log again.',
             ]);
         }
 

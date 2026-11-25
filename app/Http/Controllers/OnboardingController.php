@@ -109,9 +109,9 @@ class OnboardingController extends Controller
     }
 
     /**
-     * Send a company invitation, silently skipping emails that already
-     * belong to a member or have a pending invite — onboarding should not
-     * hard-fail on a duplicate the user typed. Returns null for a skipped email.
+     * Create a company invitation and send its mail. The method skips an
+     * email of a member or of a pending invitation, so a duplicate does not
+     * stop onboarding. It returns null for a skipped email.
      */
     private function inviteIfPossible(Company $company, User $inviter, string $email): ?CompanyInvitation
     {
