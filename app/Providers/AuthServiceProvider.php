@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Auth\ActiveUserProvider;
+use App\Models\Company;
 use App\Models\Font;
 use App\Models\Template;
 use App\Models\User;
+use App\Policies\CompanyPolicy;
 use App\Policies\FontPolicy;
 use App\Policies\TemplatePolicy;
 use DateInterval;
@@ -33,6 +35,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Template::class => TemplatePolicy::class,
         Font::class => FontPolicy::class,
+        Company::class => CompanyPolicy::class,
     ];
 
     /**

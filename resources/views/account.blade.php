@@ -49,12 +49,12 @@
 
     <template #users>
       <div v-pre>
-        <x-account.users :users="$users" :invitations="$invitations" />
+        <x-account.users :company="$company" :users="$users" :invitations="$invitations" />
       </div>
     </template>
 
     <template #developers>
-      <x-account.developers :tokens="$tokens" :api-keys="$apiKeys" :oauth-connections="$oauthConnections" :webhook-secret="$company->webhook_secret" />
+      <x-account.developers :tokens="$tokens" :api-keys="$apiKeys" :oauth-connections="$oauthConnections" :webhook-secret="$company->webhook_secret" :can-rotate-webhook-secret="Gate::allows('rotateWebhookSecret', $company)" />
     </template>
 
     <template #security>

@@ -9,7 +9,11 @@ class WebhookSecretController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
-        $request->user()->company->rotateWebhookSecret();
+        $company = $request->user()->company;
+
+        $this->authorize('rotateWebhookSecret', $company);
+
+        $company->rotateWebhookSecret();
 
         return back()->with([
             'status' => 'Webhook signing secret rotated. Update your receivers now.',

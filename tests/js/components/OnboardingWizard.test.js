@@ -82,3 +82,24 @@ describe('OnboardingWizard profile', () => {
     expect(http.post).toHaveBeenCalledWith('/onboarding/profile', { name: 'Pat' })
   })
 })
+
+describe('OnboardingWizard for a member', () => {
+  it('has two steps and finishes after the categories, with no invite step', async () => {
+    http.post.mockImplementation(url => url === '/onboarding/finish'
+      ? Promise.resolve({ data: { redirect: '/dashboard' } })
+      : Promise.resolve({ data: { ok: true } }))
+    const wrapper = mount(OnboardingWizard, {
+      props: { initialName: 'Pat', initialCompany: 'Acme', canRenameCompany: false, canInvite: false },
+    })
+
+    expect(wrapper.text()).toContain('Step 1 of 2')
+    await clickButton(wrapper, 'Continue')
+    await clickButton(wrapper, wrapper.findAll('button[aria-pressed]')[0].text())
+    await clickButton(wrapper, 'Finish')
+
+    expect(wrapper.find('#ob-invite-0').exists()).toBe(false)
+    expect(http.post).not.toHaveBeenCalledWith('/onboarding/invites', expect.anything())
+    expect(http.post).toHaveBeenCalledWith('/onboarding/finish', {})
+    expect(assign).toHaveBeenCalledWith('/dashboard')
+  })
+})

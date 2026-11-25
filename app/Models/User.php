@@ -27,6 +27,14 @@ class User extends Authenticatable implements HasMedia
 
     const ROLE_CUSTOMER = 'customer';
 
+    /** The role in the company. An owner can change the company itself. */
+    const COMPANY_ROLE_OWNER = 'owner';
+
+    /** The role in the company. A member shares the content of the company. */
+    const COMPANY_ROLE_MEMBER = 'member';
+
+    const COMPANY_ROLES = [self::COMPANY_ROLE_OWNER, self::COMPANY_ROLE_MEMBER];
+
     /** The login form and a closed session show this text to a deactivated user. */
     const DEACTIVATED_MESSAGE = 'This account is deactivated. Ask the owner of this instance to reactivate it.';
 
@@ -116,19 +124,33 @@ class User extends Authenticatable implements HasMedia
     }
 
     /**
-     * The founder is the first user of the company: the user who created it.
-     * A member who joined later through an invitation is not the founder.
-     * The rule reads the users table and not the invitation rows, because a
-     * member can delete an invitation row.
+     * A user who creates a company is its owner. A user who joins a company
+     * that already has users is a member. Every path that creates a user gets
+     * this rule: registration, an invitation, `/setup` and `snapsbrew:install`.
+     * The role is not mass assignable, so a request cannot set it.
      */
-    public function isCompanyFounder(): bool
+    protected static function booted(): void
     {
-        $firstUserId = User::query()
-            ->where('company_id', $this->company_id)
-            ->orderBy('id')
-            ->value('id');
+        static::creating(function (User $user) {
+            if (isset($user->getAttributes()['company_role'])) {
+                return;
+            }
 
-        return $firstUserId === $this->id;
+            $companyHasUsers = $user->company_id !== null
+                && User::query()->where('company_id', $user->company_id)->exists();
+
+            $user->company_role = $companyHasUsers ? self::COMPANY_ROLE_MEMBER : self::COMPANY_ROLE_OWNER;
+        });
+    }
+
+    /**
+     * An owner can rename the company, rotate its secrets, manage the
+     * invitations and the fonts, and change the roles of the users.
+     * This role is not the owner of the instance (`isOwner()`).
+     */
+    public function isCompanyOwner(): bool
+    {
+        return $this->company_role === self::COMPANY_ROLE_OWNER;
     }
 
     /** The person who runs this instance. Only the owner can open Horizon. */

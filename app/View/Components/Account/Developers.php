@@ -13,6 +13,7 @@ class Developers extends Component
         public Collection $apiKeys,
         public Collection $oauthConnections,
         public string $webhookSecret,
+        public bool $canRotateWebhookSecret = false,
     ) {}
 
     public function render(): View

@@ -122,11 +122,18 @@
   {{-- Outside v-pre: the copy field is a Vue component. The secret holds only letters, digits and "_". --}}
   <x-ui.panel title="Webhook signing secret" description="Snapsbrew signs each webhook of your company with this secret. Check the X-Snapsbrew-Signature header to confirm that a request came from Snapsbrew.">
     <x-slot name="actions">
-      <form method="POST" action="/account/webhook-secret"
-            onsubmit="return confirm('Rotate the webhook signing secret? Your receivers reject the next webhook until you give them the new secret.')">
-        @csrf
-        <x-ui.button variant="secondary">Rotate secret</x-ui.button>
-      </form>
+      @if ($canRotateWebhookSecret)
+        <form method="POST" action="/account/webhook-secret"
+              onsubmit="return confirm('Rotate the webhook signing secret? Your receivers reject the next webhook until you give them the new secret.')">
+          @csrf
+          <x-ui.button variant="secondary">Rotate secret</x-ui.button>
+        </form>
+      @else
+        <div class="flex items-center gap-3">
+          <span id="webhook-owner-only" class="text-sm text-gray-600">Only a company owner can do this.</span>
+          <x-ui.button type="button" variant="secondary" disabled aria-describedby="webhook-owner-only">Rotate secret</x-ui.button>
+        </div>
+      @endif
     </x-slot>
 
     <x-ui.copy-field :value="$webhookSecret" />

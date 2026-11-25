@@ -35,6 +35,21 @@ class UserFactory extends Factory
         ]);
     }
 
+    /** Without a state, the first user of a company is its owner and later users are members. */
+    public function companyOwner()
+    {
+        return $this->state(fn (array $attributes) => [
+            'company_role' => User::COMPANY_ROLE_OWNER,
+        ]);
+    }
+
+    public function companyMember()
+    {
+        return $this->state(fn (array $attributes) => [
+            'company_role' => User::COMPANY_ROLE_MEMBER,
+        ]);
+    }
+
     public function unverified()
     {
         return $this->state(function (array $attributes) {
