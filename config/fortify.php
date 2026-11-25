@@ -18,7 +18,9 @@ return [
     'home' => RouteServiceProvider::HOME,
     'prefix' => '',
     'domain' => null,
-    'lowercase_usernames' => false,
+    // The users table stores each email in lowercase (User::email()). SQLite
+    // compares text with case, so the login form lowercases the email too.
+    'lowercase_usernames' => true,
     'limiters' => [
         'login' => 'login',
         'two-factor' => 'two-factor',

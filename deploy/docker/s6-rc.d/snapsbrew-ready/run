@@ -1,0 +1,63 @@
+#!/command/with-contenv sh
+# Prints the ready line and the URL to open when the app and the renderer
+# answer. These two lines are the last lines of the boot log.
+cd /var/www/html || exit 1
+
+port="${NGINX_HTTP_PORT:-8080}"
+
+wait_for() {
+    url="$1"
+    name="$2"
+    tries=0
+    until curl -fsS -o /dev/null --max-time 2 "$url" 2>/dev/null; do
+        tries=$((tries + 1))
+        if [ "$tries" -ge 600 ]; then
+            echo "❌ $name did not answer on $url after 5 minutes. Read the log above."
+            return 1
+        fi
+        sleep 0.5
+    done
+}
+
+wait_for "http://127.0.0.1:${port}/up" "Snapsbrew" || exec /command/s6-pause
+
+if [ "${RENDER_DRIVER:-browsershot}" != "browserless" ] && [ "${SNAPSBREW_CHROMIUM:-true}" = "true" ]; then
+    wait_for "http://127.0.0.1:${SNAPSBREW_CHROMIUM_PORT:-9222}/json/version" "Chromium" || exec /command/s6-pause
+fi
+
+# The first start queues the preview images of the onboarding templates. A
+# job can write a log line, so wait up to 90 seconds until the database queue
+# is empty. Then the ready line stays the last line of the boot.
+if [ "${QUEUE_CONNECTION:-sync}" = "database" ]; then
+    tries=0
+    while [ "$tries" -lt 90 ]; do
+        pending="$(php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo Illuminate\Support\Facades\DB::table(config("queue.connections.database.table", "jobs"))->count();' 2>/dev/null)"
+        [ "${pending:-0}" = "0" ] && break
+        tries=$((tries + 1))
+        sleep 1
+    done
+fi
+
+# The age of process 1 is the time since the container started. The start
+# time that 05-snapsbrew-secrets.sh wrote is the second choice.
+seconds="$(ps -o etimes= -p 1 2>/dev/null | tr -d ' ')"
+if [ -z "$seconds" ]; then
+    started="$(cat /tmp/snapsbrew-started-at 2>/dev/null || date +%s)"
+    seconds=$(( $(date +%s) - started ))
+fi
+
+setup_url="$(php artisan snapsbrew:setup-url --no-ansi 2>/dev/null)" || setup_url=""
+case "$setup_url" in
+    http://* | https://*)
+        open_url="$setup_url"
+        ;;
+    *)
+        open_url="$(php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap(); echo config("app.url");' 2>/dev/null)"
+        ;;
+esac
+
+echo ""
+echo "✓ Snapsbrew is ready (${seconds}s)"
+echo "→ Open ${open_url}"
+
+exec /command/s6-pause

@@ -29,7 +29,7 @@ class UserPasswordCommand extends Command
 
     public function handle(ResetUserPassword $resetter): int
     {
-        $user = User::query()->where('email', $this->argument('email'))->first();
+        $user = User::query()->where('email', strtolower(trim($this->argument('email'))))->first();
 
         if (! $user) {
             $this->components->error("No user has the email {$this->argument('email')}.");

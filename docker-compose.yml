@@ -1,139 +1,107 @@
 # Self-host Snapsbrew with Docker Compose.
 #
-# 1. Copy .env.docker.example to .env. Fill in APP_KEY, APP_URL and the
-#    passwords.
-# 2. Run: docker compose up -d --build
-# 3. Run: docker compose logs web
-#    Open the setup URL from the log and create the owner account.
+# The default stack is one container with SQLite. It needs no settings:
 #
-# The web container runs the migrations when it starts (AUTORUN). Then it
-# creates the Passport keys in the "storage" volume and prints the setup URL
-# while no account exists. Horizon and the scheduler start after the web
-# container is healthy.
+#   docker compose up -d --build
+#   docker compose logs -f web
 #
-# To create the owner from the command line instead, run:
-#   docker compose exec web php artisan snapsbrew:install
-
-x-app: &app
-  build: .
-  image: snapsbrew:latest
-  restart: unless-stopped
-  env_file: .env
-  environment: &app-env
-    DB_CONNECTION: mysql
-    DB_HOST: mysql
-    DB_PORT: 3306
-    REDIS_HOST: redis
-    REDIS_PASSWORD: "null"
-    CACHE_DRIVER: redis
-    QUEUE_CONNECTION: redis
-    SESSION_DRIVER: redis
-    RENDER_DRIVER: browserless
-    BROWSERLESS_URL: http://browserless:3000
-  volumes:
-    # The rendered images, the uploads, the Passport keys and the logs.
-    - storage:/var/www/html/storage
-  depends_on: &app-depends
-    mysql:
-      condition: service_healthy
-    redis:
-      condition: service_healthy
-    browserless:
-      condition: service_healthy
+# The last log line is the URL to open. Open it and create the owner account.
+# To show the setup URL again, run:
+#   docker compose exec web php artisan snapsbrew:setup-url
+#
+# The "mysql" profile adds MySQL 8.4, Redis and Browserless. In that mode the
+# web container runs Horizon instead of queue:work. To use it:
+#   1. Copy .env.docker.example to .env.
+#   2. Remove the comment marks of the MySQL block, and set the passwords.
+#   3. Run: docker compose up -d --build
+#
+# docker-compose.image.yml is the same stack with the published image. When
+# you change one file, change the other file too.
 
 services:
   web:
-    <<: *app
+    build: .
+    image: snapsbrew:latest
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
     ports:
       # The app listens on the loopback interface of the host by default. Put a
       # reverse proxy on the host in front of it. Set APP_BIND=0.0.0.0 only if
       # the app must take traffic from other hosts with no proxy.
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8080}:8080"
-    environment:
-      <<: *app-env
-      AUTORUN_ENABLED: "true"
-      AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
-      # Create the Passport keys and print the setup URL at start.
-      SNAPSBREW_PREPARE_ON_START: "true"
-    # The image checks GET /up. The first start runs about 85 migrations, so
-    # the check waits up to 10 minutes before a failure counts.
-    healthcheck:
-      start_period: 600s
-      start_interval: 5s
-
-  horizon:
-    <<: *app
-    command: ["php", "artisan", "horizon"]
-    stop_signal: SIGTERM
+    volumes:
+      # The database (SQLite), the app key, the uploads and the rendered images.
+      - data:/data
     stop_grace_period: 60s
-    healthcheck:
-      test: ["CMD", "healthcheck-horizon"]
-      start_period: 30s
     depends_on:
-      <<: *app-depends
-      web:
-        condition: service_healthy
-
-  scheduler:
-    <<: *app
-    command: ["php", "artisan", "schedule:work"]
-    stop_signal: SIGTERM
-    healthcheck:
-      test: ["CMD", "healthcheck-schedule"]
-      start_period: 30s
-    depends_on:
-      <<: *app-depends
-      web:
-        condition: service_healthy
+      # These services exist only with the "mysql" profile. Without the
+      # profile, the web container starts alone. `up` does not wait for MySQL
+      # to be healthy: the web container waits up to 5 minutes for the
+      # database (AUTORUN_LARAVEL_MIGRATION_TIMEOUT in the image).
+      mysql:
+        condition: service_started
+        required: false
+      redis:
+        condition: service_started
+        required: false
+      browserless:
+        condition: service_started
+        required: false
 
   mysql:
     image: mysql:8.4
+    profiles: ["mysql"]
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-snapsbrew}
       MYSQL_USER: ${DB_USERNAME:-snapsbrew}
-      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-}
+      # The app uses MYSQL_USER. Nobody needs the root password.
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
     volumes:
       - mysql:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
       start_period: 30s
 
   redis:
     image: redis:8-alpine
+    profiles: ["mysql"]
     restart: unless-stopped
     volumes:
       - redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   # Pooled headless Chrome. The app posts the snap HTML to it and gets the
   # image back. The token is its only protection, so its port stays inside
   # the compose network.
   browserless:
     image: ghcr.io/browserless/chromium:v2.38.1
+    profiles: ["mysql"]
     restart: unless-stopped
     environment:
-      TOKEN: ${BROWSERLESS_TOKEN:?Set BROWSERLESS_TOKEN in .env}
+      TOKEN: ${BROWSERLESS_TOKEN:-}
       CONCURRENT: 5
       QUEUED: 20
       # Milliseconds. Keep it equal to BROWSERLESS_TIMEOUT of the app.
       TIMEOUT: 15000
     healthcheck:
       test: ["CMD-SHELL", "curl -sf \"http://localhost:3000/json/version?token=$${TOKEN}\" > /dev/null"]
-      interval: 15s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
       start_period: 20s
 
 volumes:
-  storage:
+  data:
   mysql:
   redis:

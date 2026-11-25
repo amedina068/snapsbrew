@@ -5,6 +5,7 @@ use App\Providers\EventServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\HorizonServiceProvider;
 use App\Providers\RouteServiceProvider;
+use App\Support\RuntimeDefaults;
 use Illuminate\Auth\AuthServiceProvider;
 use Illuminate\Auth\Passwords\PasswordResetServiceProvider;
 use Illuminate\Broadcasting\BroadcastServiceProvider;
@@ -116,7 +117,9 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    // APP_URL, then https://APP_DOMAIN, then http://localhost:8080 (the port
+    // of the Docker image).
+    'url' => RuntimeDefaults::appUrl(env('APP_URL'), env('APP_DOMAIN')),
 
     /*
     |--------------------------------------------------------------------------
@@ -200,7 +203,9 @@ return [
     |
     */
 
-    'key' => env('APP_KEY'),
+    // APP_KEY, then the file in APP_KEY_FILE. The Docker image writes that
+    // file (/data/.secrets/app_key) on the first start.
+    'key' => RuntimeDefaults::appKey(env('APP_KEY'), env('APP_KEY_FILE')),
 
     'cipher' => 'AES-256-CBC',
 
@@ -255,8 +260,17 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         FortifyServiceProvider::class,
         EventServiceProvider::class,
-        HorizonServiceProvider::class,
         RouteServiceProvider::class,
+
+        /*
+         * Horizon runs only the Redis queue. composer.json lists it in
+         * "dont-discover", so an install with the database queue (the Docker
+         * image) has no /horizon route and no horizon commands.
+         */
+        ...(env('QUEUE_CONNECTION', 'sync') === 'redis' ? [
+            Laravel\Horizon\HorizonServiceProvider::class,
+            HorizonServiceProvider::class,
+        ] : []),
 
     ],
 

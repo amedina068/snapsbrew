@@ -10,6 +10,10 @@ This file lists the changes to the code for each release. The release notes for 
 
 ### Added
 
+- The Docker image runs all of Snapsbrew in one container with no settings: `docker run -d -p 8080:8080 -v snapsbrew:/data ghcr.io/amedina068/snapsbrew`. s6 runs the web server, `queue:work`, the scheduler and a headless Chromium. The `/data` volume holds the SQLite database, the app key (made on the first start), the uploads and the rendered images. The last log line of the boot is the URL to open.
+- `APP_DOMAIN` sets the app URL to `https://<domain>`. In the Docker image, Caddy then gets a certificate and serves the ports 80 and 443.
+- `database/schema` holds a schema dump for MySQL and for SQLite. A new MySQL database loads it in about 2 seconds instead of running 85 migrations. `scripts/dump-schemas.sh` writes the two files again.
+
 - `composer analyse` runs Larastan at level 5, and the CI runs it on each pull request. `phpstan-baseline.neon` holds the errors that existed before.
 - The template page has a **Delete template** button with a confirmation.
 - **Admin > Users** has a **Delete** button next to **Reactivate** and **Deactivate**. It deletes the user and the personal data of the user. If the user is the last member of the company, it also deletes the company and its content.
@@ -19,6 +23,14 @@ This file lists the changes to the code for each release. The release notes for 
 - An async snap that fails to render posts a `snap.failed` webhook. The snap in the body has `status: failed` and `last_error: render_failed`.
 
 ### Changed
+
+- `docker-compose.yml` starts one container with SQLite. The `mysql` profile adds MySQL 8.4, Redis and Browserless, and the web container then runs Horizon. The Compose stack no longer has separate Horizon and scheduler containers, so `docker compose up -d` no longer waits for the migrations. The volume is `data` (mounted at `/data`), not `storage`.
+- Horizon loads only when `QUEUE_CONNECTION=redis`. With another queue, `/horizon` and the `horizon` commands do not exist.
+- The app stores each email in lowercase, and the login form, the registration form and the CLI commands lowercase the email that a person types. Existing rows do not change.
+- SQLite connections use WAL, a busy timeout of 5 seconds and `IMMEDIATE` transactions (`DB_JOURNAL_MODE`, `DB_BUSY_TIMEOUT`, `DB_SYNCHRONOUS`, `DB_TRANSACTION_MODE`).
+- The `database` queue connection gives a job 180 seconds before a retry, the same as the `redis` connection.
+- When `APP_KEY` is empty, the app reads the key from the file in `APP_KEY_FILE`.
+- A release tag `v0.x.y` also publishes the image tag `0`.
 
 - Each REST API route with a bearer token answers an error with a JSON body, also when the request has no `Accept: application/json` header. Before, such a request got a 302 to `/login` for a bad token, a 302 for a validation error and an HTML page for a missing record.
 - The `409` and `422` bodies of the template and editor document routes have a `message` next to `code`. The message says how to correct the request.

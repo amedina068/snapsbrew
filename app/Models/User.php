@@ -4,11 +4,13 @@ namespace App\Models;
 
 use App\Support\SignedUrlKeys;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\MediaLibrary\HasMedia;
@@ -70,6 +72,18 @@ class User extends Authenticatable implements HasMedia
         'deactivated_at' => 'datetime',
         'onboarding_categories' => 'array',
     ];
+
+    /**
+     * Store the email in lowercase. MySQL compares emails without case and
+     * SQLite compares them with case, so one stored form finds the same user
+     * on both databases.
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value) => $value === null ? null : Str::lower(trim($value)),
+        );
+    }
 
     public function screenshots(): HasMany
     {

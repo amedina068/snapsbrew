@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Laravel\Horizon\Horizon;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Support\LoadsHorizon;
 use Tests\TestCase;
 
 /**
@@ -15,7 +16,7 @@ use Tests\TestCase;
  */
 class SelfHostDefaultsTest extends TestCase
 {
-    use RefreshDatabase;
+    use LoadsHorizon, RefreshDatabase;
 
     private function horizonAllows(?User $user): bool
     {

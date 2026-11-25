@@ -11,6 +11,7 @@ use App\Support\Registration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
@@ -62,6 +63,12 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function createAccount(array $input, ?CompanyInvitation $invitation = null): User
     {
+        // The users table stores the email in lowercase. Lowercase it before
+        // the unique rule, which compares with case on SQLite.
+        if (is_string($input['email'] ?? null)) {
+            $input['email'] = Str::lower(trim($input['email']));
+        }
+
         $emailRules = [
             'required',
             'string',
