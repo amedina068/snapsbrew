@@ -1,6 +1,6 @@
 # Bundled fonts
 
-The renderer embeds these fonts in the HTML of a snap, so a render needs no internet access. They are the font families of the starter templates (`App\Support\StarterTemplates`), plus Poppins.
+The renderer embeds these fonts in the HTML of a snap, so a render needs no internet access. They are the font families of the starter templates (`App\Support\StarterTemplates`) and of the onboarding templates (`storage/app/templates/onboarding-*.txt`). `FontLibraryTest` fails when a shipped template uses a family that is not here.
 
 Each folder holds one family:
 

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Rendering;
 
 use App\Rendering\FontLibrary;
+use App\Support\StarterTemplates;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -34,7 +35,46 @@ class FontLibraryTest extends TestCase
 
     public static function starterFamilies(): array
     {
-        return [['Inter'], ['DM Serif Display'], ['Playfair Display'], ['Anton'], ['Poppins']];
+        return [['Inter'], ['DM Serif Display'], ['Playfair Display'], ['Anton'], ['Poppins'], ['Pacifico'], ['Righteous']];
+    }
+
+    /**
+     * The templates that every install gets: the starter templates and the
+     * onboarding templates of the `seed_onboarding_templates` migration.
+     *
+     * @return list<string>
+     */
+    private static function shippedTemplateFamilies(): array
+    {
+        $families = [];
+
+        foreach (StarterTemplates::all() as $template) {
+            foreach ($template['layers'] as $layer) {
+                foreach ($layer['properties'] as $property) {
+                    if ($property['name'] === 'fontFamily') {
+                        $families[] = $property['value'];
+                    }
+                }
+            }
+        }
+
+        foreach (File::glob(storage_path('app/templates/onboarding-*.txt')) as $file) {
+            preg_match_all('/"name":"fontFamily","value":"([^"]+)"/', File::get($file), $matches);
+            array_push($families, ...$matches[1]);
+        }
+
+        return array_values(array_unique($families));
+    }
+
+    public function test_every_font_of_a_shipped_template_is_bundled()
+    {
+        $families = self::shippedTemplateFamilies();
+        $this->assertContains('Righteous', $families);
+
+        foreach ($families as $family) {
+            $this->assertFileExists(resource_path('fonts/'.FontLibrary::slug($family).'/font.css'), "The shipped templates use {$family}, which is not in resources/fonts.");
+            $this->assertContains([$family], self::starterFamilies(), "Add {$family} to starterFamilies().");
+        }
     }
 
     #[DataProvider('starterFamilies')]

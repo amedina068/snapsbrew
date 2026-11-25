@@ -16,8 +16,8 @@ use Throwable;
  * The library reads a family from two folders with the same layout: one
  * folder per family, with a `font.css` file and the woff2 files it names.
  *
- * - `resources/fonts` holds the families of the starter templates. They ship
- *   with the app.
+ * - `resources/fonts` holds the families of the starter and onboarding
+ *   templates. They ship with the app.
  * - `storage/app/fonts` is the cache. The first render that uses another
  *   Google font downloads it there one time.
  *
