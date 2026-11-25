@@ -303,7 +303,7 @@ The v2 editor stores one JSON document for each template. `TemplateDocumentServi
 5. It updates the progress of the import, if the snap has one.
 6. It posts the `snap.completed` or `snap.failed` webhook for an async snap.
 
-`ProcessCreativePackageItem` renders one creative package item. `GenerateTemplateVersionPreview` renders the preview image of a version. `InstallStarterTemplates` runs the starter template installer for the setup page. `RemoveFreeToolSnap` deletes a snap of the free tools one day later.
+`ProcessCreativePackageItem` renders one creative package item. `GenerateTemplateVersionPreview` renders the preview image of a version. `GenerateTemplatePreview` renders the preview image of a template after the setup page adds the starter templates. `InstallStarterTemplates` runs the starter template installer on the queue for a caller that must not wait for the previews. `RemoveFreeToolSnap` deletes a snap of the free tools one day later.
 
 `App\Support\Queues` names the queues: `renders`, `imports`, `mail` and `default`. `config/horizon.php` gives each queue its workers.
 
