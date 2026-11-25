@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\PageScreenshotter;
 use App\Contracts\SnapRenderer;
+use App\Rendering\RenderDocument;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -17,10 +18,11 @@ use Throwable;
  * browser and manages its own concurrency/timeout/health. browserless returns
  * the raw image/PDF bytes, which we base64-encode to satisfy the seam contract.
  *
- * Asset reachability: the HTML's referenced assets (custom @font-face media
- * URLs, image layers, Google Fonts) must be fetchable from the browserless
- * container's network. Public/S3 media disks work; a self-signed local disk
- * does not — that's why local dev stays on the browsershot driver.
+ * Asset reachability: RenderDocument embeds the Google fonts before the post.
+ * The other assets (custom @font-face media URLs, image layers) must be
+ * fetchable from the browserless container's network. S3 media works. For the
+ * public disk, set RENDER_ASSET_URL to an app address that browserless can
+ * reach, for example `http://web:8080`.
  */
 class BrowserlessRenderer implements PageScreenshotter, SnapRenderer
 {
@@ -33,7 +35,7 @@ class BrowserlessRenderer implements PageScreenshotter, SnapRenderer
         $type = in_array($format, ['jpeg', 'webp'], true) ? $format : 'png';
 
         $payload = [
-            'html' => $html,
+            'html' => app(RenderDocument::class)->prepare($html),
             'viewport' => ['width' => $width, 'height' => $height],
             'options' => [
                 'type' => $type,
@@ -74,7 +76,7 @@ class BrowserlessRenderer implements PageScreenshotter, SnapRenderer
         }
 
         $payload = [
-            'html' => $html,
+            'html' => app(RenderDocument::class)->prepare($html),
             'gotoOptions' => ['waitUntil' => 'networkidle0'],
             'options' => $options,
         ];

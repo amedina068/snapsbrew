@@ -2588,6 +2588,7 @@ paths:
                 webhook_url: null
                 completed_at: '2026-05-01T12:00:03Z'
                 last_error: null
+                warnings: []
                 variants: []
                 template_id: 141e8454-8aa1-420a-bd0b-18a85ba949a2
                 template_title: 'Launch card'
@@ -2615,6 +2616,7 @@ paths:
                 webhook_url: 'https://example.com/hooks/snap'
                 completed_at: null
                 last_error: null
+                warnings: []
                 variants: []
                 template_id: 141e8454-8aa1-420a-bd0b-18a85ba949a2
                 template_title: 'Launch card'
@@ -3771,6 +3773,7 @@ paths:
                 webhook_url: null
                 completed_at: '2026-05-01T12:00:03Z'
                 last_error: null
+                warnings: []
                 variants: []
                 template_id: '141e8454'
                 template_title: 'Launch card'
@@ -4200,6 +4203,11 @@ components:
           type: string
           nullable: true
           description: 'A fixed code, when status is failed: `render_failed`, or a webhook code (`webhook_address_refused`, `webhook_redirect_refused`, `webhook_unreachable`, `webhook_http_<status>`). Null otherwise.'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/RenderWarning'
+          description: 'Problems of the render that did not stop it, for example a font that the server could not load. An empty list when there are none.'
         variants:
           type: array
           nullable: true
@@ -4229,10 +4237,31 @@ components:
         - webhook_url
         - completed_at
         - last_error
+        - warnings
         - variants
         - template_id
         - template_title
         - created_at
+      additionalProperties: false
+    RenderWarning:
+      type: object
+      description: 'One problem of a render that did not stop it.'
+      properties:
+        code:
+          type: string
+          enum:
+            - font_unavailable
+          description: '`font_unavailable`: the server could not load the font, so the image can show a fallback font.'
+        family:
+          type: string
+          description: 'The font family of the warning.'
+        message:
+          type: string
+          description: 'A sentence that a person can read.'
+      required:
+        - code
+        - family
+        - message
       additionalProperties: false
     Batch:
       type: object

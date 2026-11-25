@@ -77,6 +77,14 @@ class TrustedHostTest extends TestCase
         });
     }
 
+    public function test_the_host_of_the_render_asset_url_is_trusted()
+    {
+        config(['services.render.asset_url' => 'http://web:8080']);
+
+        $this->get('http://web:8080/up')->assertOk();
+        $this->get('http://other:8080/up')->assertStatus(400);
+    }
+
     public function test_a_previous_host_is_trusted_and_the_reset_link_names_the_app_host()
     {
         Notification::fake();

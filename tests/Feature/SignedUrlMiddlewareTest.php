@@ -42,7 +42,7 @@ class SignedUrlMiddlewareTest extends TestCase
     {
         $browsershot = Mockery::mock('overload:'.Browsershot::class);
         $fluent = [
-            'html', 'url', 'setOption', 'setNodeBinary', 'setNpmBinary',
+            'html', 'url', 'setOption', 'setNodeBinary', 'setNpmBinary', 'setNodeModulePath', 'setChromePath', 'noSandbox',
             'windowSize', 'waitUntilNetworkIdle', 'preventUnsuccessfulResponse',
             'setScreenshotType', 'transparentBackground',
         ];

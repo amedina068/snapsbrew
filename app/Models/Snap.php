@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\SnapRenderer;
+use App\Rendering\RenderWarnings;
 use App\Support\SnapDocument;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -154,6 +155,9 @@ class Snap extends Model implements HasMedia
         $format = $this->imageFormat();
         $meta = self::FORMAT_META[$format];
 
+        $warnings = app(RenderWarnings::class);
+        $warnings->flush();
+
         $base64Data = $this->takeSnapshot(
             $this->renderDocument(),
             $width,
@@ -164,13 +168,31 @@ class Snap extends Model implements HasMedia
 
         $this
             ->addMediaFromBase64($base64Data)
-            ->withCustomProperties(['mime-type' => $meta['mime']])
+            ->withCustomProperties(['mime-type' => $meta['mime']] + $this->warningProperties($warnings->flush()))
             ->usingFileName((string) Str::uuid(16).'.'.$meta['ext'])
             ->toMediaCollection('image');
 
         $this->unsetRelation('media');
 
         return $this->imageUrl;
+    }
+
+    /**
+     * The problems of the last render, for example a font that the server
+     * could not load. They stay with the image, and the API returns them.
+     *
+     * @param  list<array<string, string>>  $warnings
+     * @return array<string, list<array<string, string>>>
+     */
+    private function warningProperties(array $warnings): array
+    {
+        return $warnings === [] ? [] : ['render_warnings' => $warnings];
+    }
+
+    /** @return list<array<string, string>> */
+    public function getRenderWarningsAttribute(): array
+    {
+        return $this->getFirstMedia('image')?->getCustomProperty('render_warnings', []) ?? [];
     }
 
     /** The validated output format, defaulting to png for legacy/blank rows. */
@@ -200,10 +222,14 @@ class Snap extends Model implements HasMedia
     public function getPdf($pages = null)
     {
         [$width, $height] = $this->renderDimensions();
+        $warnings = app(RenderWarnings::class);
+        $warnings->flush();
+
         $base64Data = $this->takePdfSnapshot($this->renderDocument(), $width, $height, $pages);
 
         $this
             ->addMediaFromBase64($base64Data)
+            ->withCustomProperties($this->warningProperties($warnings->flush()))
             ->usingFileName('certificate-'.date('ymdhis').'.pdf')
             ->toMediaCollection('image');
 

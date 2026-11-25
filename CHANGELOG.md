@@ -17,9 +17,14 @@ This file lists the changes to the code for each release. The release notes for 
 - The collection page has a **Remove from collection** button on each template and a **Delete collection** button. Both ask for a confirmation. A collection delete also deletes the forms of the collection. The templates stay.
 - Each webhook carries `X-Snapsbrew-Delivery`, `X-Snapsbrew-Timestamp` and `X-Snapsbrew-Signature`. The signature is the HMAC-SHA256 of `{timestamp}.{body}` with the secret of the company. **Account > Developers** shows the secret and rotates it.
 - An async snap that fails to render posts a `snap.failed` webhook. The snap in the body has `status: failed` and `last_error: render_failed`.
+- A snap renders with no internet access. The renderer embeds the Google fonts of the snap in its HTML. The fonts of the starter templates ship in `resources/fonts`. The first render with another Google font downloads it one time to `storage/app/fonts`.
+- A snap has a `warnings` list. If the server cannot load a font, the render continues, logs a warning and adds a `font_unavailable` item to `warnings`.
+- `RENDER_ASSET_URL` sets the app address that the render browser uses for the images and the fonts of a snap on the `public` disk. The host of this address is a trusted host.
+- `BROWSERSHOT_NODE_MODULES_PATH`, `BROWSERSHOT_CHROME_PATH` and `BROWSERSHOT_NO_SANDBOX` configure the Browsershot renderer.
 
 ### Changed
 
+- The Browsershot renderer finds `node` and `npm` on `PATH` when `BROWSERSHOT_NODE_PATH` and `BROWSERSHOT_NPM_PATH` are empty. It reads Puppeteer from the `node_modules` folder of the app and no longer runs `npm root -g` for each render. In a container or as root, it turns off the Chrome sandbox. `BROWSERSHOT_INSTANCE` also accepts `host:port`.
 - Each REST API route with a bearer token answers an error with a JSON body, also when the request has no `Accept: application/json` header. Before, such a request got a 302 to `/login` for a bad token, a 302 for a validation error and an HTML page for a missing record.
 - The `409` and `422` bodies of the template and editor document routes have a `message` next to `code`. The message says how to correct the request.
 - `composer test` runs the test suite in parallel processes, and `composer lint` runs the code style check. The tests now write the files of the `public` disk to `storage/framework/testing`, so a test run no longer adds or deletes files in `storage/app/public` of a checkout.

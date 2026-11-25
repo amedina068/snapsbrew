@@ -6,6 +6,7 @@ use App\Contracts\EditorAssetTransport;
 use App\Contracts\EditorAssetUrlResolver;
 use App\Contracts\PageScreenshotter;
 use App\Contracts\SnapRenderer;
+use App\Rendering\RenderWarnings;
 use App\Services\BrowserlessRenderer;
 use App\Services\BrowsershotRenderer;
 use App\Services\CurlEditorAssetTransport;
@@ -31,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
         };
         $this->app->bind(SnapRenderer::class, $renderer);
         $this->app->bind(PageScreenshotter::class, $renderer);
+        $this->app->scoped(RenderWarnings::class);
         $this->app->bind(EditorAssetTransport::class, CurlEditorAssetTransport::class);
         $this->app->bind(EditorAssetUrlResolver::class, PublicEditorAssetUrlResolver::class);
     }
