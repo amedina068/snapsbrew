@@ -85,6 +85,38 @@ class BrowserlessRendererTest extends TestCase
         });
     }
 
+    public function test_the_posted_html_has_its_fonts_embedded_and_its_assets_rewritten()
+    {
+        Http::fake(['browserless:3000/*' => Http::response('BYTES', 200)]);
+        config()->set('app.url', 'https://app.snapsbrew.test');
+        config()->set('media-library.disk_name', 'public');
+        config()->set('services.render.asset_url', 'http://web:8080');
+
+        $document = '<html><head><link href="https://fonts.googleapis.com/css2?family=Inter" rel="stylesheet"></head>'
+            ."<body><div style=\"background-image: url('https://app.snapsbrew.test/storage/1/a.png');\"></div></body></html>";
+
+        $renderer = new BrowserlessRenderer;
+        $renderer->screenshotBase64($document, 100, 100);
+        $renderer->pdfBase64($document, 100, 100);
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($request) => str_contains($request['html'], 'data:font/woff2;base64,')
+            && ! str_contains($request['html'], 'fonts.googleapis.com')
+            && str_contains($request['html'], "url('http://web:8080/storage/1/a.png')"));
+        Http::assertNotSent(fn ($request) => str_contains($request['html'], 'fonts.googleapis.com'));
+    }
+
+    public function test_a_url_screenshot_is_not_rewritten()
+    {
+        Http::fake(['browserless:3000/*' => Http::response('BYTES', 200)]);
+        config()->set('app.url', 'https://app.snapsbrew.test');
+        config()->set('services.render.asset_url', 'http://web:8080');
+
+        (new BrowserlessRenderer)->screenshotUrlBase64('https://app.snapsbrew.test/page', 100, 100, false);
+
+        Http::assertSent(fn ($request) => $request['url'] === 'https://app.snapsbrew.test/page');
+    }
+
     public function test_transparent_png_sets_omit_background()
     {
         Http::fake(['browserless:3000/screenshot*' => Http::response('X', 200)]);

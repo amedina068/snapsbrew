@@ -274,7 +274,9 @@ The v2 editor stores one JSON document for each template. `TemplateDocumentServi
 `App\Contracts\SnapRenderer` and `App\Contracts\PageScreenshotter` are the two render contracts. `AppServiceProvider` binds both to one driver, from `RENDER_DRIVER`:
 
 - `browserless`: `BrowserlessRenderer` posts the HTML to a Browserless service. The Docker setup uses it.
-- `browsershot`: `BrowsershotRenderer` starts a local Chrome through Node and Puppeteer for each render.
+- `browsershot`: `BrowsershotRenderer` drives Chrome through Node and Puppeteer. With `BROWSERSHOT_INSTANCE`, each render opens a tab in a Chrome that is already running. Without it, each render starts a new Chrome.
+
+Both drivers send the HTML through `App\Rendering\RenderDocument` first. It replaces the Google Fonts link with `@font-face` rules that have `data:` URIs, so a render needs no internet access. `FontLibrary` reads the fonts from `resources/fonts` (the starter fonts) and from `storage/app/fonts` (a cache that the first render with another Google font fills). When `MEDIA_DISK` is `public` and `RENDER_ASSET_URL` is set, it also moves the asset URLs from the `APP_URL` origin to that address. A font that is not available adds a `font_unavailable` item to `RenderWarnings`. `Snap::getImage()` stores the warnings with the image, and the API returns them in `warnings`. The stored snap HTML and the HTML preview keep the Google Fonts link.
 
 `PreviewRenderer` returns watermarked HTML for previews. It starts no browser and writes no usage row.
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Snap;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,6 +21,9 @@ class SnapResource extends JsonResource
         // inline design has no template at all.
         $source = $this->sourceTemplateVersion ?? $this->template;
 
+        /** @var Snap $snap */
+        $snap = $this->resource;
+
         return [
             'id' => $this->uuid,
             'media_url' => $this->imageUrl,
@@ -31,6 +35,7 @@ class SnapResource extends JsonResource
             'webhook_url' => $this->webhook_url,
             'completed_at' => $this->completed_at,
             'last_error' => $this->last_error,
+            'warnings' => $snap->render_warnings,
             'variants' => json_decode($this->variants, true),
             'template_id' => optional($this->template)->uuid,
             'template_title' => optional($this->template)->title,

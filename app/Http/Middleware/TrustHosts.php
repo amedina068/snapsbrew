@@ -6,8 +6,8 @@ use Illuminate\Http\Middleware\TrustHosts as Middleware;
 use Illuminate\Support\Facades\URL;
 
 /**
- * Accepts only the host of APP_URL, the hosts of APP_PREVIOUS_URLS and the
- * loopback hosts.
+ * Accepts only the host of APP_URL, the hosts of APP_PREVIOUS_URLS, the host of
+ * RENDER_ASSET_URL and the loopback hosts.
  *
  * Laravel builds absolute URLs, for example the password reset link, from the
  * Host header of the request. A client sets that header, so without this list
@@ -29,7 +29,9 @@ class TrustHosts extends Middleware
      */
     public function hosts()
     {
-        $urls = [config('app.url'), ...config('app.previous_urls', [])];
+        // The render browser loads the assets of a snap from RENDER_ASSET_URL,
+        // for example http://web:8080 from browserless in Docker Compose.
+        $urls = [config('app.url'), ...config('app.previous_urls', []), config('services.render.asset_url')];
 
         return collect($urls)
             ->map(fn ($url) => parse_url((string) $url, PHP_URL_HOST))
