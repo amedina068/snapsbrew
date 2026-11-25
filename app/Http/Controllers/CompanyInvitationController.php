@@ -67,21 +67,27 @@ class CompanyInvitationController extends Controller
             'expires_at' => now()->addDays(7),
         ]);
 
+        [$sent, $message] = $this->send($invitation);
+
         return back()->with([
-            'status' => $this->send($invitation),
+            'status' => $message,
+            'invite_sent' => $sent,
             'invite_url' => $invitation->url(),
             'open_tab' => 'users',
         ]);
     }
 
     /**
-     * Send the invitation email and return the message for the page. The
-     * invitation stays when the mail fails, because the page gives the link.
+     * Send the invitation email. Returns whether a mail went out, and the
+     * message for the page. The invitation stays when the mail fails,
+     * because the page gives the link.
+     *
+     * @return array{0: bool, 1: string}
      */
-    private function send(CompanyInvitation $invitation): string
+    private function send(CompanyInvitation $invitation): array
     {
         if (! MailDelivery::isConfigured()) {
-            return 'Mail is not set up. Send this link yourself.';
+            return [false, 'Mail is not set up. Send this link yourself.'];
         }
 
         try {
@@ -89,10 +95,10 @@ class CompanyInvitationController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return 'The invitation email did not go out. Send this link yourself.';
+            return [false, 'The invitation email did not go out. Send this link yourself.'];
         }
 
-        return "We sent the invitation to {$invitation->email}.";
+        return [true, "We sent the invitation to {$invitation->email}."];
     }
 
     public function destroy($invitation): RedirectResponse
