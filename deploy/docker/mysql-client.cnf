@@ -1,0 +1,11 @@
+# Options for the mysql client of the image (MariaDB 11.8). Laravel runs the
+# client one time, to load database/schema/mysql-schema.sql into a new
+# database.
+#
+# The MariaDB client checks the TLS certificate of the server by default.
+# MySQL 8.4 makes a self-signed certificate, so the check fails with
+# "ERROR 2026 (HY000): TLS/SSL error: self-signed certificate". The
+# connection still uses TLS. PDO, which the app uses for each query, does not
+# check the certificate either.
+[client]
+ssl-verify-server-cert = 0

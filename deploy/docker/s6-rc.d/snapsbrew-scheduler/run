@@ -1,0 +1,12 @@
+#!/command/with-contenv sh
+# The scheduler runs the commands of app/Console/Kernel.php each minute.
+# Set SNAPSBREW_SCHEDULER=false when another container runs the scheduler.
+# The command prints a line each minute, so its standard output goes to
+# /dev/null. Errors still go to the log.
+cd /var/www/html || exit 1
+
+if [ "${SNAPSBREW_SCHEDULER:-true}" != "true" ]; then
+    exec /command/s6-pause
+fi
+
+exec php artisan schedule:work > /dev/null

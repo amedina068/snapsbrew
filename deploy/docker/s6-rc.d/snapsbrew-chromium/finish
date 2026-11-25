@@ -1,0 +1,6 @@
+#!/bin/sh
+# s6 starts Chromium again after this script. $1 is the exit code. 256 means
+# that a signal stopped the process, and $2 is the signal number.
+if [ "$1" != "0" ] && [ "$2" != "15" ]; then
+    echo "⚠️ Chromium stopped (exit code $1, signal $2). s6 starts it again."
+fi

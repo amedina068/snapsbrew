@@ -1,0 +1,12 @@
+#!/command/with-contenv sh
+# Automatic HTTPS. When APP_DOMAIN is set, Caddy gets a certificate for that
+# domain, listens on the ports 80 and 443, and sends each request to NGINX on
+# port 8080. The certificates stay in /data/caddy.
+if [ -z "${APP_DOMAIN:-}" ]; then
+    exec /command/s6-pause
+fi
+
+export XDG_DATA_HOME=/data/caddy/data XDG_CONFIG_HOME=/data/caddy/config
+mkdir -p "$XDG_DATA_HOME" "$XDG_CONFIG_HOME"
+
+exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile

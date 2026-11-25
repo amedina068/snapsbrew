@@ -1,0 +1,32 @@
+#!/command/with-contenv sh
+# The queue worker. QUEUE_CONNECTION selects the worker:
+#   redis       Horizon, with the supervisor of config/horizon.php
+#   sync, null  no worker, because no job waits in a queue
+#   other       queue:work, for example with the database queue of the image
+#
+# The queue order is the order of App\Support\Queues::all(). The test
+# DockerRuntimeFilesTest fails when the two lists are different.
+cd /var/www/html || exit 1
+
+case "${QUEUE_CONNECTION:-sync}" in
+    redis)
+        exec php artisan horizon
+        ;;
+    sync | null)
+        exec /command/s6-pause
+        ;;
+    *)
+        # --timeout and --tries are the values of the Horizon supervisor. A
+        # job that sets its own timeout or tries keeps its own value.
+        #
+        # The worker writes no line for each job, as Horizon. The exception
+        # of a failed job still goes to the log (LOG_CHANNEL=stderr). Set
+        # SNAPSBREW_QUEUE_VERBOSE=true to see a line for each job.
+        quiet="--quiet"
+        [ "${SNAPSBREW_QUEUE_VERBOSE:-false}" = "true" ] && quiet=""
+        # shellcheck disable=SC2086
+        exec php artisan queue:work "${QUEUE_CONNECTION}" $quiet \
+            --queue=renders,imports,mail,default \
+            --sleep=1 --tries=1 --timeout=60 --memory=256 --max-time=3600
+        ;;
+esac

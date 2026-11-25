@@ -1,0 +1,30 @@
+#!/command/with-contenv sh
+# A headless Chromium that stays warm. Browsershot connects to it through
+# BROWSERSHOT_INSTANCE (http://127.0.0.1:9222) and opens one tab per render.
+# The port listens on the loopback interface of the container only.
+#
+# With RENDER_DRIVER=browserless, the app renders through Browserless, so
+# this service does nothing. SNAPSBREW_CHROMIUM=false also stops it.
+if [ "${RENDER_DRIVER:-browsershot}" = "browserless" ] || [ "${SNAPSBREW_CHROMIUM:-true}" != "true" ]; then
+    exec /command/s6-pause
+fi
+
+export HOME=/tmp/chromium-home XDG_CACHE_HOME=/tmp/chromium-home/.cache XDG_CONFIG_HOME=/tmp/chromium-home/.config
+mkdir -p "$XDG_CACHE_HOME" "$XDG_CONFIG_HOME"
+
+# The container has no user namespaces, so the Chromium sandbox cannot start.
+# Chromium writes a line for each start and each tab. The log shows only the
+# exit status (see the finish script).
+exec /usr/lib/chromium/chromium-headless-shell \
+    --no-sandbox \
+    --disable-gpu \
+    --disable-dev-shm-usage \
+    --no-first-run \
+    --no-default-browser-check \
+    --hide-scrollbars \
+    --mute-audio \
+    --font-render-hinting=none \
+    --user-data-dir=/tmp/chromium-profile \
+    --remote-debugging-address=127.0.0.1 \
+    --remote-debugging-port="${SNAPSBREW_CHROMIUM_PORT:-9222}" \
+    about:blank > /dev/null 2>&1
