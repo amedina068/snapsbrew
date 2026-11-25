@@ -38,6 +38,7 @@ class SkillFileGenerator
         $out[] = '';
         $out[] = SnapsbrewServer::WORKFLOW;
         $out[] = '';
+        array_push($out, ...AgentOperations::lines());
 
         return implode("\n", $out);
     }
