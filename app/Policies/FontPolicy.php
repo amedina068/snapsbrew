@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Font;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class FontPolicy
 {
@@ -13,8 +14,16 @@ class FontPolicy
         return $user->company_id === $font->company_id;
     }
 
-    public function delete(User $user, Font $font): bool
+    /**
+     * Only an owner of the company can delete a font. Templates that use the
+     * font fall back to a default font, so the change affects every member.
+     */
+    public function delete(User $user, Font $font): Response
     {
-        return $user->company_id === $font->company_id;
+        if ($user->company_id !== $font->company_id) {
+            return Response::deny();
+        }
+
+        return $user->isCompanyOwner() ? Response::allow() : Response::deny(CompanyPolicy::DENIED);
     }
 }

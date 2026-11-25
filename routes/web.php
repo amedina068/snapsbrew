@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\ApiTokenController;
 use App\Http\Controllers\CompanyInvitationController;
+use App\Http\Controllers\CompanyUserRoleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\EmbeddedFormController;
@@ -74,6 +75,7 @@ Route::middleware(['auth', 'onboarded'])->group(function () {
     Route::get('account', [AccountController::class, 'index']);
     Route::post('account/invitations', [CompanyInvitationController::class, 'store'])->middleware('throttle:10,1');
     Route::delete('account/invitations/{invitation}', [CompanyInvitationController::class, 'destroy']);
+    Route::patch('account/users/{user}/role', [CompanyUserRoleController::class, 'update'])->whereNumber('user')->middleware('throttle:10,1');
     Route::post('account/webhook-secret', [WebhookSecretController::class, 'store'])->middleware('throttle:6,1');
     Route::get('logs', [LogController::class, 'index']);
     Route::get('logs/{logUuid}', [LogController::class, 'show']);

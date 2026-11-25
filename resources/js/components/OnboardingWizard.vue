@@ -5,10 +5,10 @@
       <!-- Brand + step rail -->
       <div class="mb-8 flex items-center justify-between">
         <span class="font-display text-2xl tracking-tight text-atomic-cream">Snapsbrew</span>
-        <p class="sr-only" aria-live="polite">Step {{ step }} of 3</p>
+        <p class="sr-only" aria-live="polite">Step {{ step }} of {{ stepCount }}</p>
         <div class="flex items-center gap-2" aria-hidden="true">
           <span
-            v-for="n in 3"
+            v-for="n in stepCount"
             :key="n"
             class="h-3 w-3 rounded-full border-[3px] border-atomic-cream transition"
             :class="n <= step ? 'bg-atomic-coral' : 'bg-atomic-ink'"
@@ -183,7 +183,7 @@
               @click="advance"
               class="inline-flex items-center gap-2 rounded-full border-[3px] border-atomic-ink bg-atomic-coral px-7 py-3 font-sans font-bold text-atomic-cream shadow-atomic transition hover:translate-x-[3px] hover:translate-y-[3px] hover:bg-atomic-coral-dk hover:shadow-[3px_3px_0_0_#211d1a] focus-visible:outline-solid focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-atomic-ink disabled:opacity-60"
             >
-              {{ submitting ? 'Just a sec…' : (step === 3 ? 'Finish' : 'Continue') }}
+              {{ submitting ? 'Just a sec…' : (step === stepCount ? 'Finish' : 'Continue') }}
             </button>
           </div>
         </div>
@@ -202,8 +202,10 @@ export default {
   props: {
     initialName: { type: String, default: '' },
     initialCompany: { type: String, default: '' },
-    // Only the founder of the company can set its name. An invited member cannot.
+    // Only an owner of the company can set its name. A member cannot.
     canRenameCompany: { type: Boolean, default: true },
+    // Only an owner of the company can invite. A member skips the invite step.
+    canInvite: { type: Boolean, default: true },
   },
 
   data() {
@@ -229,6 +231,12 @@ export default {
         emails: ['', ''],
       },
     }
+  },
+
+  computed: {
+    stepCount() {
+      return this.canInvite ? 3 : 2
+    },
   },
 
   watch: {
@@ -279,9 +287,16 @@ export default {
         if (this.canRenameCompany) profile.company_name = this.form.companyName
         await this.submitStep('/onboarding/profile', profile, () => { this.step = 2 })
       } else if (this.step === 2) {
+        let saved = false
         await this.submitStep('/onboarding/categories', {
           categories: this.form.categories,
-        }, () => { this.step = 3 })
+        }, () => { saved = true })
+        if (!saved) return
+        if (this.canInvite) {
+          this.step = 3
+        } else {
+          await this.complete()
+        }
       } else {
         await this.finish(false)
       }

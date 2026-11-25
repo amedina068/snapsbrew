@@ -18,6 +18,7 @@
             initial-name="{{ $name }}"
             initial-company="{{ $companyName }}"
             :can-rename-company="{{ $canRenameCompany ? 'true' : 'false' }}"
+            :can-invite="{{ $canInvite ? 'true' : 'false' }}"
         ></onboarding-wizard>
     </div>
 </body>

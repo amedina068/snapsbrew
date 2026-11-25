@@ -16,7 +16,7 @@ class FontController extends Controller
     {
         $fonts = Font::where('company_id', Auth::user()->company_id)
             ->latest()
-            ->get(['uuid', 'name', 'family', 'created_at']);
+            ->get(['uuid', 'company_id', 'name', 'family', 'created_at']);
 
         // Surface usage inline so a delete is an informed choice, never a
         // silent fallback under a live template (T-605).

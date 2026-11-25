@@ -151,4 +151,17 @@ class AdminUsersTest extends TestCase
         $response->assertSee('Reactivate');
         $response->assertSee('Deactivate');
     }
+
+    public function test_the_list_shows_the_company_role_of_each_user()
+    {
+        $owner = $this->owner();
+        $acme = Company::factory()->create(['name' => 'Acme Studio']);
+        User::factory()->create(['email' => 'ada@example.com', 'company_id' => $acme->id]);
+        User::factory()->create(['email' => 'max@example.com', 'company_id' => $acme->id]);
+
+        $this->actingAs($owner)->get('/admin/users')
+            ->assertOk()
+            ->assertSee('Company role')
+            ->assertSeeInOrder(['max@example.com', 'Acme Studio', 'Member', 'ada@example.com', 'Acme Studio', 'Owner']);
+    }
 }

@@ -21,11 +21,13 @@ class CompanyInvitationController extends Controller
     {
         session()->flash('open_tab', 'users');
 
+        $company = Auth::user()->company;
+
+        $this->authorize('manageInvitations', $company);
+
         $request->validate([
             'email' => ['required', 'email:strict'],
         ]);
-
-        $company = Auth::user()->company;
 
         $email = strtolower($request->email);
 
@@ -101,10 +103,17 @@ class CompanyInvitationController extends Controller
         return [true, "We sent the invitation to {$invitation->email}."];
     }
 
+    /**
+     * Cancel an invitation that nobody accepted yet. An accepted invitation
+     * is the record of how a member joined, so this endpoint keeps it.
+     */
     public function destroy($invitation): RedirectResponse
     {
+        $this->authorize('manageInvitations', Auth::user()->company);
+
         $invitation = CompanyInvitation::query()
             ->where('company_id', Auth::user()->company_id)
+            ->whereNull('accepted_at')
             ->where('id', $invitation)
             ->firstOrFail();
 

@@ -137,13 +137,15 @@ class InstanceAdminServerTest extends TestCase
     {
         $company = Company::factory()->create(['name' => 'Max Studio']);
         User::factory()->create(['email' => 'max@example.com', 'company_id' => $company->id]);
+        User::factory()->create(['email' => 'maxine@example.com', 'company_id' => $company->id]);
 
         $users = $this->payload(InstanceAdminServer::tool(ListUsersTool::class, ['search' => 'max']))['users'];
-        $this->assertSame(['max@example.com'], array_column($users, 'email'));
+        $this->assertSame(['max@example.com', 'maxine@example.com'], array_column($users, 'email'));
+        $this->assertSame(['owner', 'member'], array_column($users, 'company_role'));
 
         $companies = $this->payload(InstanceAdminServer::tool(ListCompaniesTool::class))['companies'];
         $max = collect($companies)->firstWhere('name', 'Max Studio');
-        $this->assertSame(1, $max['users_count']);
+        $this->assertSame(2, $max['users_count']);
         $this->assertSame(0, $max['templates_count']);
     }
 

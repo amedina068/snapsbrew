@@ -45,7 +45,7 @@ class AgentCommandsJsonTest extends TestCase
     public function test_user_list_returns_every_user_with_a_stable_shape()
     {
         $owner = User::factory()->create(['name' => 'Olive Owner', 'email' => 'owner@example.com', 'is_owner' => true, 'company_id' => Company::factory()->create(['name' => 'Olive Studio'])]);
-        User::factory()->create(['email' => 'member@example.com', 'deactivated_at' => now()]);
+        User::factory()->create(['email' => 'member@example.com', 'deactivated_at' => now(), 'company_id' => $owner->company_id]);
 
         [$exit, $json] = $this->runJson('snapsbrew:user:list');
 
@@ -53,10 +53,12 @@ class AgentCommandsJsonTest extends TestCase
         $users = $json['data']['users'];
         $this->assertTrue(array_is_list($users));
         $this->assertCount(2, $users);
-        $this->assertSame(['id', 'name', 'email', 'company', 'role', 'is_owner', 'deactivated', 'email_verified', 'created_at'], array_keys($users[0]));
+        $this->assertSame(['id', 'name', 'email', 'company', 'company_role', 'role', 'is_owner', 'deactivated', 'email_verified', 'created_at'], array_keys($users[0]));
         $this->assertSame($owner->id, $users[0]['id']);
         $this->assertSame(['id' => $owner->company_id, 'name' => 'Olive Studio'], $users[0]['company']);
         $this->assertTrue($users[0]['is_owner']);
+        $this->assertSame('owner', $users[0]['company_role']);
+        $this->assertSame('member', $users[1]['company_role']);
         $this->assertTrue($users[1]['deactivated']);
     }
 

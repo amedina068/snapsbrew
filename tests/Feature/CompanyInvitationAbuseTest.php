@@ -87,8 +87,9 @@ class CompanyInvitationAbuseTest extends TestCase
         Mail::fake();
         config(['snapsbrew.invitations_per_company_per_day' => 2]);
         $company = Company::factory()->create();
-        $first = User::factory()->create(['company_id' => $company->id]);
-        $second = User::factory()->create(['company_id' => $company->id]);
+        // Two owners of one company share the cap. Only an owner can invite.
+        $first = User::factory()->companyOwner()->create(['company_id' => $company->id]);
+        $second = User::factory()->companyOwner()->create(['company_id' => $company->id]);
 
         $this->actingAs($first)->postJson('/account/invitations', ['email' => 'a@example.com'])->assertRedirect();
         $this->actingAs($second)->postJson('/account/invitations', ['email' => 'b@example.com'])->assertRedirect();

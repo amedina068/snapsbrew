@@ -35,7 +35,24 @@ class DeleteUser
 
         if ($lastMember) {
             $this->deleteCompany($company);
+        } elseif ($company instanceof Company) {
+            $this->keepAnOwner($company);
         }
+    }
+
+    /**
+     * A company always has an owner. When the deleted user was the last
+     * owner, the user who joined first becomes the owner.
+     */
+    private function keepAnOwner(Company $company): void
+    {
+        if ($company->users()->where('company_role', User::COMPANY_ROLE_OWNER)->exists()) {
+            return;
+        }
+
+        $company->users()->orderBy('id')->first()
+            ?->forceFill(['company_role' => User::COMPANY_ROLE_OWNER])
+            ->save();
     }
 
     private function deletePersonalData(User $user): void

@@ -51,6 +51,9 @@
     @if ($fonts->isEmpty())
       <x-ui.empty-state icon="document-text" title="No custom fonts yet">Upload one above to use it in your templates.</x-ui.empty-state>
     @else
+      @cannot('delete', $fonts->first())
+        <p id="fonts-owner-only" class="mb-3 text-sm text-gray-600">Only a company owner can delete a font.</p>
+      @endcannot
       <x-ui.table caption="Your fonts">
         <x-slot name="head">
           <x-ui.th>Font</x-ui.th>
@@ -72,17 +75,21 @@
               @endif
             </x-ui.td>
             <x-ui.td align="right">
-              <form action="{{ url('/fonts/'.$font->uuid) }}" method="POST"
-                onsubmit="return confirm('{{ $forced ? 'Delete anyway? Templates using this font will fall back to a default.' : 'Delete this font?' }}');">
-                @csrf
-                @method('DELETE')
-                @if ($forced)
-                  <input type="hidden" name="force" value="1">
-                  <x-ui.button size="sm" variant="danger">Delete anyway</x-ui.button>
-                @else
-                  <x-ui.button size="sm" variant="danger-ghost">Delete</x-ui.button>
-                @endif
-              </form>
+              @can('delete', $font)
+                <form action="{{ url('/fonts/'.$font->uuid) }}" method="POST"
+                  onsubmit="return confirm('{{ $forced ? 'Delete anyway? Templates using this font will fall back to a default.' : 'Delete this font?' }}');">
+                  @csrf
+                  @method('DELETE')
+                  @if ($forced)
+                    <input type="hidden" name="force" value="1">
+                    <x-ui.button size="sm" variant="danger">Delete anyway</x-ui.button>
+                  @else
+                    <x-ui.button size="sm" variant="danger-ghost">Delete</x-ui.button>
+                  @endif
+                </form>
+              @else
+                <x-ui.button type="button" size="sm" variant="danger-ghost" disabled title="Only a company owner can do this." aria-describedby="fonts-owner-only">Delete</x-ui.button>
+              @endcan
             </x-ui.td>
           </tr>
         @endforeach

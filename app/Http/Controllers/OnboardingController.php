@@ -7,6 +7,7 @@ use App\Mail\CompanyInvitationMail;
 use App\Models\Company;
 use App\Models\CompanyInvitation;
 use App\Models\User;
+use App\Policies\CompanyPolicy;
 use App\Services\OnboardingSnapDispatcher;
 use App\Support\InvitationQuota;
 use App\Support\MailDelivery;
@@ -31,34 +32,35 @@ class OnboardingController extends Controller
         return view('onboarding.show', [
             'name' => $user->name,
             'companyName' => $user->company->name,
-            'canRenameCompany' => $user->isCompanyFounder(),
+            'canRenameCompany' => $user->can('update', $user->company),
+            'canInvite' => $user->can('manageInvitations', $user->company),
             'categories' => OnboardingSnapDispatcher::CATEGORY_PREFIX,
         ]);
     }
 
     /**
-     * Save the name of the user. Only the founder of the company can set the
-     * company name here. A member who joined through an invitation gets a
-     * validation error if the request has a company name.
+     * Save the name of the user. Only an owner of the company can set the
+     * company name here. A member gets a validation error if the request
+     * has a company name.
      */
     public function storeProfile(Request $request): JsonResponse
     {
         $user = $request->user();
-        $isFounder = $user->isCompanyFounder();
+        $canRename = $user->can('update', $user->company);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'company_name' => $isFounder
+            'company_name' => $canRename
                 ? ['required', 'string', 'max:255']
                 : ['prohibited'],
         ], [
-            'company_name.prohibited' => 'Only the person who created the company can change its name.',
+            'company_name.prohibited' => CompanyPolicy::DENIED,
         ]);
 
-        DB::transaction(function () use ($user, $data, $isFounder) {
+        DB::transaction(function () use ($user, $data, $canRename) {
             $user->update(['name' => $data['name']]);
 
-            if ($isFounder) {
+            if ($canRename) {
                 $user->company->update(['name' => $data['company_name']]);
             }
         });
@@ -92,6 +94,8 @@ class OnboardingController extends Controller
 
         $user = $request->user();
         $company = $user->company;
+
+        $this->authorize('manageInvitations', $company);
 
         $invitations = collect($data['emails'] ?? [])
             ->map(fn ($email) => strtolower(trim($email)))

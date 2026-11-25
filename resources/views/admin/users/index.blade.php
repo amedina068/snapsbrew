@@ -20,6 +20,7 @@
         <x-ui.th>Name</x-ui.th>
         <x-ui.th>Email</x-ui.th>
         <x-ui.th>Company</x-ui.th>
+        <x-ui.th>Company role</x-ui.th>
         <x-ui.th>Created</x-ui.th>
         <x-ui.th>Status</x-ui.th>
         <x-ui.th align="right">Actions</x-ui.th>
@@ -37,6 +38,7 @@
           </x-ui.td>
           <x-ui.td class="whitespace-nowrap">{{ $member->email }}</x-ui.td>
           <x-ui.td class="whitespace-nowrap">{{ $member->company?->name ?? '—' }}</x-ui.td>
+          <x-ui.td class="whitespace-nowrap">{{ $member->company ? ($member->isCompanyOwner() ? 'Owner' : 'Member') : '—' }}</x-ui.td>
           <x-ui.td class="whitespace-nowrap">
             <time datetime="{{ $member->created_at?->toIso8601String() }}">{{ $member->created_at?->format('M j, Y') }}</time>
           </x-ui.td>
@@ -78,7 +80,7 @@
         </tr>
       @empty
         <tr>
-          <x-ui.td colspan="6" class="py-8 text-center">
+          <x-ui.td colspan="7" class="py-8 text-center">
             @if ($search !== '')
               No user matches "{{ $search }}".
             @else
