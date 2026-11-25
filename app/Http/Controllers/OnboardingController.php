@@ -9,6 +9,7 @@ use App\Models\CompanyInvitation;
 use App\Models\User;
 use App\Services\OnboardingSnapDispatcher;
 use App\Support\InvitationQuota;
+use App\Support\MailDelivery;
 use App\Support\Queues;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,13 +79,21 @@ class OnboardingController extends Controller
         $user = $request->user();
         $company = $user->company;
 
-        collect($data['emails'] ?? [])
+        $invitations = collect($data['emails'] ?? [])
             ->map(fn ($email) => strtolower(trim($email)))
             ->filter()
             ->unique()
-            ->each(fn ($email) => $this->inviteIfPossible($company, $user, $email));
+            ->map(fn ($email) => $this->inviteIfPossible($company, $user, $email))
+            ->filter()
+            ->map(fn (CompanyInvitation $invitation) => ['email' => $invitation->email, 'url' => $invitation->url()])
+            ->values();
 
-        return response()->json(['ok' => true]);
+        // Without mail, the wizard shows each link so the user can send it.
+        return response()->json([
+            'ok' => true,
+            'mail_configured' => MailDelivery::isConfigured(),
+            'invitations' => $invitations,
+        ]);
     }
 
     public function finish(Request $request): JsonResponse
@@ -102,9 +111,9 @@ class OnboardingController extends Controller
     /**
      * Send a company invitation, silently skipping emails that already
      * belong to a member or have a pending invite — onboarding should not
-     * hard-fail on a duplicate the user typed.
+     * hard-fail on a duplicate the user typed. Returns null for a skipped email.
      */
-    private function inviteIfPossible(Company $company, User $inviter, string $email): void
+    private function inviteIfPossible(Company $company, User $inviter, string $email): ?CompanyInvitation
     {
         $isMember = User::query()
             ->where('company_id', $company->id)
@@ -112,7 +121,7 @@ class OnboardingController extends Controller
             ->exists();
 
         if ($isMember) {
-            return;
+            return null;
         }
 
         $alreadyInvited = CompanyInvitation::query()
@@ -122,7 +131,7 @@ class OnboardingController extends Controller
             ->exists();
 
         if ($alreadyInvited || ! InvitationQuota::take($company)) {
-            return;
+            return null;
         }
 
         $invitation = $company->invitations()->create([
@@ -132,8 +141,12 @@ class OnboardingController extends Controller
             'expires_at' => now()->addDays(7),
         ]);
 
-        Mail::to($email)->queue(
-            (new CompanyInvitationMail($invitation, $inviter))->onQueue(Queues::MAIL)
-        );
+        if (MailDelivery::isConfigured()) {
+            Mail::to($email)->queue(
+                (new CompanyInvitationMail($invitation, $inviter))->onQueue(Queues::MAIL)
+            );
+        }
+
+        return $invitation;
     }
 }
