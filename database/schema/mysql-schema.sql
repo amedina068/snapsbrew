@@ -747,6 +747,7 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `company_id` bigint unsigned DEFAULT NULL,
+  `company_role` varchar(16) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'member',
   `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -858,3 +859,4 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (82,'2026_11_16_000
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (83,'2026_11_16_000400_create_instance_settings_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (84,'2026_11_16_000410_add_deactivated_at_to_users_table',1);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (85,'2026_11_18_000000_add_webhook_secret_to_companies_table',1);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (86,'2026_11_25_000000_add_company_role_to_users_table',1);
