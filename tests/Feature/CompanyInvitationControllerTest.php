@@ -172,7 +172,8 @@ class CompanyInvitationControllerTest extends TestCase
         $this->createAuthenticatedUser();
 
         $this->from('/account')->post('/account/invitations', ['email' => 'new@example.com'])
-            ->assertSessionHas('status', 'We sent the invitation to new@example.com.');
+            ->assertSessionHas('status', 'We sent the invitation to new@example.com.')
+            ->assertSessionHas('invite_sent', true);
 
         Mail::assertSent(CompanyInvitationMail::class, fn ($mail) => $mail->hasTo('new@example.com'));
     }
@@ -201,6 +202,7 @@ class CompanyInvitationControllerTest extends TestCase
 
         $this->from('/account')->post('/account/invitations', ['email' => 'new@example.com'])
             ->assertSessionHas('status', 'The invitation email did not go out. Send this link yourself.')
+            ->assertSessionHas('invite_sent', false)
             ->assertSessionHas('invite_url');
 
         $this->assertDatabaseHas('company_invitations', ['email' => 'new@example.com']);
