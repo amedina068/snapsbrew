@@ -42,6 +42,12 @@ class CompanyInvitation extends Model
             });
     }
 
+    /** The sign-up link of this invitation. It works until the invitation expires. */
+    public function url(): string
+    {
+        return route('register', ['invitation' => $this->token]);
+    }
+
     public function markAccepted(User $user): void
     {
         $this->forceFill([

@@ -6,12 +6,14 @@ use App\Mail\CompanyInvitationMail;
 use App\Models\CompanyInvitation;
 use App\Models\User;
 use App\Support\InvitationQuota;
+use App\Support\MailDelivery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class CompanyInvitationController extends Controller
 {
@@ -65,13 +67,32 @@ class CompanyInvitationController extends Controller
             'expires_at' => now()->addDays(7),
         ]);
 
-        Mail::to($email)
-            ->send(new CompanyInvitationMail($invitation, Auth::user()));
-
         return back()->with([
-            'status' => 'Invitation sent successfully.',
+            'status' => $this->send($invitation),
+            'invite_url' => $invitation->url(),
             'open_tab' => 'users',
         ]);
+    }
+
+    /**
+     * Send the invitation email and return the message for the page. The
+     * invitation stays when the mail fails, because the page gives the link.
+     */
+    private function send(CompanyInvitation $invitation): string
+    {
+        if (! MailDelivery::isConfigured()) {
+            return 'Mail is not set up. Send this link yourself.';
+        }
+
+        try {
+            Mail::to($invitation->email)->send(new CompanyInvitationMail($invitation, Auth::user()));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return 'The invitation email did not go out. Send this link yourself.';
+        }
+
+        return "We sent the invitation to {$invitation->email}.";
     }
 
     public function destroy($invitation): RedirectResponse

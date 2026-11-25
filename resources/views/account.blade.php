@@ -18,6 +18,15 @@
           {{ $statusMessage }}
         </div>
       @endif
+
+      {{-- The invite link holds APP_URL and a token of letters and digits, so the copy field can sit outside v-pre. --}}
+      @if (session('invite_url'))
+        <div class="mb-8 rounded-lg border-l-4 border-l-emerald-500 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          <p class="font-semibold">Invite link</p>
+          <x-ui.copy-field class="mt-2 bg-white" :value="session('invite_url')" />
+          <p class="mt-3 text-xs">The link works for 7 days. The person who opens it can sign up and join your company.</p>
+        </div>
+      @endif
     </template>
 
     <template #header>

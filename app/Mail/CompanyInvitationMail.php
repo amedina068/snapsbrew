@@ -22,7 +22,7 @@ class CompanyInvitationMail extends Mailable
         return $this->subject('You are invited to join Snapsbrew')
             ->markdown('emails.company-invitation')
             ->with([
-                'url' => route('register', ['invitation' => $this->invitation->token]),
+                'url' => $this->invitation->url(),
             ]);
     }
 }

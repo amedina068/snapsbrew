@@ -298,4 +298,50 @@ class OnboardingTest extends TestCase
 
         $this->assertEquals(0, Snap::query()->where('metadata->onboarding', 'showcase')->count());
     }
+
+    public function test_with_the_log_mailer_the_invites_step_returns_the_links_and_sends_no_mail(): void
+    {
+        Mail::fake();
+        config(['mail.default' => 'log']);
+        $user = User::factory()->needsOnboarding()->create();
+
+        $response = $this->actingAs($user)
+            ->postJson('/onboarding/invites', ['emails' => ['fresh@co.test']])
+            ->assertOk()
+            ->assertJsonPath('mail_configured', false);
+
+        $invitation = CompanyInvitation::query()->where('email', 'fresh@co.test')->firstOrFail();
+        $response->assertJsonPath('invitations', [
+            ['email' => 'fresh@co.test', 'url' => route('register', ['invitation' => $invitation->token])],
+        ]);
+        Mail::assertNothingQueued();
+    }
+
+    public function test_with_a_mailer_the_invites_step_queues_the_mail_and_says_so(): void
+    {
+        Mail::fake();
+        config(['mail.default' => 'smtp']);
+        $user = User::factory()->needsOnboarding()->create();
+
+        $this->actingAs($user)
+            ->postJson('/onboarding/invites', ['emails' => ['fresh@co.test']])
+            ->assertOk()
+            ->assertJsonPath('mail_configured', true)
+            ->assertJsonCount(1, 'invitations');
+
+        Mail::assertQueued(CompanyInvitationMail::class, 1);
+    }
+
+    public function test_the_invites_step_returns_no_link_for_a_skipped_email(): void
+    {
+        config(['mail.default' => 'log']);
+        $company = $this->company();
+        $user = User::factory()->needsOnboarding()->create(['company_id' => $company->id]);
+        User::factory()->create(['company_id' => $company->id, 'email' => 'member@co.test']);
+
+        $this->actingAs($user)
+            ->postJson('/onboarding/invites', ['emails' => ['member@co.test']])
+            ->assertOk()
+            ->assertJsonPath('invitations', []);
+    }
 }
