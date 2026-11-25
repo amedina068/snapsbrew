@@ -10,6 +10,12 @@ This file lists the changes to the code for each release. The release notes for 
 
 ### Added
 
+- Each `snapsbrew:*` command accepts `--json`. With `--json`, stdout holds one JSON object (`ok`, `command`, `schema`, `data`, `errors`). The exit code is 0 for success, 1 for a failed check, 2 for bad input and 3 for a conflict.
+- `php artisan snapsbrew:install` returns a one-time `login_url` and does not need `--password`. `--with-token=<name>` also returns an API token and ready `claude mcp add` and `codex mcp add` lines. `--password` still works, but it is deprecated.
+- New commands: `snapsbrew:status`, `snapsbrew:doctor [--fix]`, `snapsbrew:token:create`, `snapsbrew:token:list`, `snapsbrew:token:revoke` and `snapsbrew:mcp:connect --client=claude|codex|cursor|json`.
+- An instance-admin MCP server with 16 tools runs over stdio: `php artisan mcp:start snapsbrew-admin`. With `MCP_ADMIN_ENABLED=true`, `/mcp/admin` also serves it to an owner with a short-lived `instance_admin` token. Each call writes an audit entry.
+- The scheduler writes a heartbeat each minute, and a queue worker writes a second one. `snapsbrew:status` and `snapsbrew:doctor` read them.
+- `/llms.txt` and `/skill.md` have the sections "Install with an agent" and "Operate this instance".
 - `composer analyse` runs Larastan at level 5, and the CI runs it on each pull request. `phpstan-baseline.neon` holds the errors that existed before.
 - The template page has a **Delete template** button with a confirmation.
 - **Admin > Users** has a **Delete** button next to **Reactivate** and **Deactivate**. It deletes the user and the personal data of the user. If the user is the last member of the company, it also deletes the company and its content.
