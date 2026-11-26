@@ -3,10 +3,12 @@
 namespace App\Actions\Fortify;
 
 use App\Actions\Templates\DuplicateTemplate;
+use App\Jobs\GenerateTemplatePreview;
 use App\Models\Company;
 use App\Models\CompanyInvitation;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\TemplateVersioning;
 use App\Support\Registration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -15,13 +17,15 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
+use Throwable;
 
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules;
 
     public function __construct(
-        private DuplicateTemplate $duplicateTemplate
+        private DuplicateTemplate $duplicateTemplate,
+        private TemplateVersioning $versioning,
     ) {}
 
     /**
@@ -122,10 +126,43 @@ class CreateNewUser implements CreatesNewUsers
             return $user;
         });
 
-        if ($welcomeTemplate = Template::query()->whereNull('user_id')->first()) {
-            $this->duplicateTemplate->execute($welcomeTemplate, $user);
-        }
+        $this->copyWelcomeTemplate($user);
 
         return $user;
+    }
+
+    /**
+     * Copies the first shared template into the new company. The copy gets a
+     * published version and a queued preview image, as a starter template
+     * does. Without them, the template list shows the copy with no preview.
+     *
+     * A failed publish or a failed preview does not stop the registration.
+     * The template stays usable, and the error goes to the log.
+     */
+    private function copyWelcomeTemplate(User $user): void
+    {
+        $welcomeTemplate = Template::query()->whereNull('user_id')->first();
+
+        if (! $welcomeTemplate) {
+            return;
+        }
+
+        $copy = $this->duplicateTemplate->execute($welcomeTemplate, $user);
+
+        try {
+            $this->versioning->publish($copy);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        if ($copy->hasMedia('preview')) {
+            return;
+        }
+
+        try {
+            GenerateTemplatePreview::dispatch($copy);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }

@@ -52,6 +52,15 @@ class SetupWizardTest extends TestCase
             ->get();
     }
 
+    /**
+     * The owner also gets a copy of the welcome template, and that copy queues
+     * its own preview. These checks count the starter templates only.
+     */
+    private function isStarterTemplate(Template $template): bool
+    {
+        return str_starts_with($template->title, StarterTemplates::TITLE_PREFIX);
+    }
+
     public function test_the_setup_page_shows_the_form_with_the_right_token_from_the_url()
     {
         $this->get('/setup?token='.$this->token())
@@ -122,7 +131,7 @@ class SetupWizardTest extends TestCase
         $this->assertTrue($templates->every(fn (Template $template) => ! $template->hasMedia('preview')));
 
         Queue::assertPushedOn(Queues::DEFAULT, GenerateTemplatePreview::class);
-        Queue::assertPushed(GenerateTemplatePreview::class, 6);
+        $this->assertCount(6, Queue::pushed(GenerateTemplatePreview::class, fn (GenerateTemplatePreview $job) => $this->isStarterTemplate($job->template)));
     }
 
     public function test_the_first_dashboard_load_shows_the_starter_templates()
@@ -145,7 +154,7 @@ class SetupWizardTest extends TestCase
 
         $owner = User::where('email', 'owner@example.com')->firstOrFail();
         $this->assertCount(0, $this->starterTemplatesOf($owner));
-        Queue::assertNotPushed(GenerateTemplatePreview::class);
+        Queue::assertNotPushed(GenerateTemplatePreview::class, fn (GenerateTemplatePreview $job) => $this->isStarterTemplate($job->template));
     }
 
     public function test_a_failed_setup_adds_no_starter_templates()
