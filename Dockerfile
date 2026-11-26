@@ -107,10 +107,17 @@ RUN for service in snapsbrew-queue snapsbrew-scheduler snapsbrew-chromium snapsb
     && for service in nginx php-fpm snapsbrew-queue snapsbrew-scheduler snapsbrew-chromium; do \
         touch "/etc/s6-overlay/s6-rc.d/snapsbrew-ready/dependencies.d/${service}"; \
     done \
-    && mkdir -p /data \
-    && chown www-data:www-data /data
+    && mkdir -p /data /var/www/.cache/fontconfig \
+    && chown www-data:www-data /data \
+    && chown -R www-data:www-data /var/www/.cache
 
 USER www-data
+
+# The fontconfig cache of the image user. Chromium (the s6 service) and the
+# check fonts_cache of snapsbrew:doctor use this folder. fc-cache fills it at
+# build time, so the first render does not build the font cache.
+RUN fc-cache -f
+
 WORKDIR /var/www/html
 
 # The defaults for one container with SQLite. Each value can change with -e.
