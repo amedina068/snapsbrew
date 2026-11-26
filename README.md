@@ -5,6 +5,12 @@
 
 A self-hosted image API. Design a template once in the browser editor. Then render it many times as an image or a PDF, with new text, images, colors or QR codes. A render can come from the REST API, a signed URL, a form, a spreadsheet or an AI agent.
 
+<p>
+  <img src=".github/screenshots/editor.webp" width="49%" alt="The template editor with the layer list, the canvas and the properties of the selected text layer.">
+  <img src=".github/screenshots/snap.webp" width="49%" alt="A rendered snap with its image link, status and template.">
+  <img src=".github/screenshots/templates.webp" width="49%" alt="The template list with a preview, a size and tags for each template.">
+</p>
+
 ```bash
 docker run -d --name snapsbrew -p 8080:8080 -v snapsbrew:/data ghcr.io/amedina068/snapsbrew
 docker logs -f snapsbrew
