@@ -64,7 +64,10 @@ docker run -d --name "$CONTAINER" --tmpfs /var/lib/mysql:rw,size=2g \
     -e MYSQL_DATABASE=snapsbrew -e MYSQL_ROOT_PASSWORD=root \
     -p 127.0.0.1::3306 mysql:8.4 --skip-log-bin > /dev/null
 port="$(docker port "$CONTAINER" 3306/tcp | head -1 | sed 's/.*://')"
-until docker exec "$CONTAINER" mysql -uroot -proot -e 'select 1' snapsbrew > /dev/null 2>&1; do
+# The image first starts a temporary server for the init, with no TCP port.
+# A check on the socket can pass on that server, and the migrations then
+# connect while it stops. A check on TCP passes only on the final server.
+until docker exec "$CONTAINER" mysql -h127.0.0.1 --protocol=TCP -uroot -proot -e 'select 1' snapsbrew > /dev/null 2>&1; do
     sleep 1
 done
 
