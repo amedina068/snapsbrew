@@ -4,7 +4,7 @@
       <img :src="snap" alt="">
       <div class="absolute inset-0 flex flex-col items-center justify-center m-auto h-64 w-64">
         <a :href="snap" class="text-gray-800 h-16 w-16 rounded-full inline-block rounded-sm bg-gray-100 flex items-center justify-center" download>
-          <DownloadIcon class="h-8 w-8" aria-hidden="true" />
+          <ArrowDownTrayIcon class="h-8 w-8" aria-hidden="true" />
         </a>
         <a href="#" class="mt-4" @click.prevent="removeSnap">keep editing</a>
       </div>
@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-  import { DownloadIcon } from '@heroicons/vue/outline'
+  import { ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
   import { computed, watch } from 'vue'
   import { useStore } from 'vuex'
   import LayerBlock from './LayerBlock.vue'

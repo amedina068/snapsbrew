@@ -43,7 +43,7 @@
                   @click="emit('close')"
                 >
                   <span class="sr-only">Close</span>
-                  <XIcon class="size-5" aria-hidden="true" />
+                  <XMarkIcon class="size-5" aria-hidden="true" />
                 </button>
               </header>
 
@@ -64,7 +64,7 @@
 
 <script setup>
 import { Dialog, DialogDescription, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
-import { XIcon } from '@heroicons/vue/outline'
+import { XMarkIcon } from '@heroicons/vue/24/outline'
 
 defineProps({
   open: { type: Boolean, default: false },

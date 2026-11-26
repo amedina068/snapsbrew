@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-  import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/outline'
+  import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline'
 import { computed, ref, watch } from 'vue'
 
 const props = defineProps({

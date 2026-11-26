@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { PencilIcon } from '@heroicons/vue/outline'
+import { PencilIcon } from '@heroicons/vue/24/outline'
 import { computed, nextTick, ref, watch } from 'vue'
 
 const props = defineProps({

@@ -8,7 +8,7 @@
   >
     <template #icon>
       <span class="grid size-9 shrink-0 place-items-center rounded-full bg-amber-50 text-amber-700">
-        <ExclamationIcon class="size-5" aria-hidden="true" />
+        <ExclamationTriangleIcon class="size-5" aria-hidden="true" />
       </span>
     </template>
 
@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-  import { ExclamationIcon } from '@heroicons/vue/outline'
+  import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
   import UiButton from './ui/UiButton.vue'
   import UiModal from './ui/UiModal.vue'
 

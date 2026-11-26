@@ -55,7 +55,7 @@
             aria-label="Duplicate layer"
             data-type="control"
           >
-            <DuplicateIcon class="mr-1 h-4 w-4" />
+            <DocumentDuplicateIcon class="mr-1 h-4 w-4" />
             Duplicate
           </button>
         </div>
@@ -136,8 +136,8 @@
 
 <script setup>
   import { useStore } from 'vuex'
-  import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/vue/solid'
-  import { LockClosedIcon, LockOpenIcon, DuplicateIcon } from '@heroicons/vue/outline'
+  import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/vue/20/solid'
+  import { LockClosedIcon, LockOpenIcon, DocumentDuplicateIcon } from '@heroicons/vue/24/outline'
   import { orderBy } from 'lodash'
   import { computed, toRefs, ref, onMounted, watch, nextTick } from 'vue'
   const props = defineProps({

@@ -6,7 +6,7 @@
         :href="backHref"
         @click="onNavigate($event, backHref)"
       >
-        <ArrowNarrowLeftIcon class="h-5 w-5 text-gray-400" />
+        <ArrowLongLeftIcon class="h-5 w-5 text-gray-400" />
         <span>Back to template</span>
       </a>
       <AddLayerActions />
@@ -23,7 +23,7 @@
         @click="openSettings"
         aria-label="Template settings"
       >
-        <CogIcon class="h-5 w-5" />
+        <Cog6ToothIcon class="h-5 w-5" />
       </button>
       <div class="flex items-center">
         <slot name="actions"></slot>
@@ -43,7 +43,7 @@
 <script setup>
 import AddLayerActions from './AddLayerActions.vue'
 import UnsavedChangesModal from './UnsavedChangesModal.vue'
-import { ArrowNarrowLeftIcon, CogIcon } from '@heroicons/vue/outline'
+import { ArrowLongLeftIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
 import TemplateTitleInlineEditor from './TemplateTitleInlineEditor.vue'
 import { computed, ref, onBeforeUnmount, onMounted } from 'vue'
 import { useStore } from 'vuex'

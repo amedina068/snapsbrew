@@ -59,7 +59,7 @@
 </template>
 
 <script setup>
-  import { ChevronDownIcon } from '@heroicons/vue/outline'
+  import { ChevronDownIcon } from '@heroicons/vue/24/outline'
   import { ref, computed, nextTick, onBeforeUnmount, toRefs } from 'vue'
   import SvgDesigns from '../libs/SvgDesigns'
   import SvgDesignOptions from '../libs/SvgDesignOptions'
