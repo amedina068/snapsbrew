@@ -35,7 +35,7 @@ class CompanyPolicy
         return self::owner($user, $company);
     }
 
-    /** Change the role of a user in the company. */
+    /** Change the role of a user in the company, or remove a user from the company. */
     public function manageMembers(User $user, Company $company): Response
     {
         return self::owner($user, $company);

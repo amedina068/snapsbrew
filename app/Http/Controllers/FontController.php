@@ -45,6 +45,8 @@ class FontController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', [Font::class, $request->user()->company]);
+
         $companyId = Auth::user()->company_id;
 
         $request->validate([

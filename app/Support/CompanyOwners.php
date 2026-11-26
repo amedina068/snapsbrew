@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\DB;
  * These paths use this class, so they use the same rule:
  *
  * - `PATCH /account/users/{id}/role` and `snapsbrew:user:role` change a role.
+ * - `DELETE /account/users/{id}` removes a user from the company. The
+ *   removal deactivates the user.
  * - **Admin > Users** deactivates a user.
  * - `snapsbrew:doctor` reports each company with no active owner.
  *
@@ -61,16 +63,20 @@ class CompanyOwners
      */
     public function deactivate(User $user): void
     {
-        DB::transaction(function () use ($user) {
-            $owners = $this->lockOwners($user);
-            $isActiveOwner = $owners->contains(fn (User $owner) => (int) $owner->id === (int) $user->id && ! $owner->isDeactivated());
+        $this->deactivateKeepingAnOwner($user, closeEmptyCompany: true);
+    }
 
-            if ($isActiveOwner && ! self::hasOtherActiveOwner($owners, $user) && $this->hasOtherActiveUser($user)) {
-                throw new LastActiveOwnerException($user);
-            }
-
-            $user->deactivate();
-        });
+    /**
+     * An owner removes a user from the company. The removal deactivates the
+     * user with the same rule as `deactivate()`. The last active owner always
+     * stays, also when the company has no other active user, because an
+     * owner cannot close their own company.
+     *
+     * @throws LastActiveOwnerException when the user is the last active owner
+     */
+    public function remove(User $user): void
+    {
+        $this->deactivateKeepingAnOwner($user, closeEmptyCompany: false);
     }
 
     /**
@@ -126,6 +132,29 @@ class CompanyOwners
             ->where('company_role', User::COMPANY_ROLE_OWNER)
             ->lockForUpdate()
             ->get(['id', 'company_role', 'deactivated_at']);
+    }
+
+    /**
+     * Deactivates the user unless the user is the last active owner. With
+     * `closeEmptyCompany`, the last active owner can go when no other user of
+     * the company is active.
+     *
+     * @throws LastActiveOwnerException when the user is the last active owner
+     */
+    private function deactivateKeepingAnOwner(User $user, bool $closeEmptyCompany): void
+    {
+        DB::transaction(function () use ($user, $closeEmptyCompany) {
+            $owners = $this->lockOwners($user);
+            $isActiveOwner = $owners->contains(fn (User $owner) => (int) $owner->id === (int) $user->id && ! $owner->isDeactivated());
+
+            if ($isActiveOwner
+                && ! self::hasOtherActiveOwner($owners, $user)
+                && (! $closeEmptyCompany || $this->hasOtherActiveUser($user))) {
+                throw new LastActiveOwnerException($user);
+            }
+
+            $user->deactivate();
+        });
     }
 
     private function hasOtherActiveUser(User $user): bool

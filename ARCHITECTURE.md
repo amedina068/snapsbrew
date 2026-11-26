@@ -324,7 +324,7 @@ Both drivers send the HTML through `App\Rendering\RenderDocument` first. It repl
 
 `App\Actions\Instance\DeleteUser` deletes a user and the personal data of the user for the admin area. If the user was the last owner of a company with other users, the active user who joined first becomes the owner.
 
-`App\Support\CompanyOwners` holds the rule that keeps an active owner in each company. An active owner has the role `owner` and no `deactivated_at`. `CompanyUserRoleController`, `snapsbrew:user:role` and the deactivation in **Admin > Users** call it. It locks the owner rows of the company, so two requests cannot remove the last two active owners at the same time. If a change breaks the rule, it throws `LastActiveOwnerException`. The doctor check `company_owners` reads the same class.
+`App\Support\CompanyOwners` holds the rule that keeps an active owner in each company. An active owner has the role `owner` and no `deactivated_at`. `CompanyUserRoleController`, `CompanyUserController` (an owner removes a user), `snapsbrew:user:role` and the deactivation in **Admin > Users** call it. It locks the owner rows of the company, so two requests cannot remove the last two active owners at the same time. If a change breaks the rule, it throws `LastActiveOwnerException`. The doctor check `company_owners` reads the same class.
 
 `StarterTemplateInstaller` adds the starter templates of `App\Support\StarterTemplates` to the company of a user. It writes each template through `TemplateDocumentService`, publishes it with `TemplateVersioning` and renders its preview. It skips a title that the company already has. Three callers use it: the `snapsbrew:starter-templates` command, the `snapsbrew:install` command and the `InstallStarterTemplates` job.
 
@@ -361,7 +361,7 @@ One class holds each list that more than one surface reads:
 | Forms | CRUD for the forms of a template | FormController |
 | Screenshots | list, show, create | ScreenshotController |
 | Fonts | list, upload, delete | FontController |
-| Account | profile, company, API tokens, signed-URL keys, webhook secret, invitations, OAuth connections | AccountController and its helpers |
+| Account | profile, company, API tokens, signed-URL keys, webhook secret, invitations, user roles, user removal, OAuth connections | AccountController and its helpers |
 | Usage log | `GET /logs` | LogController |
 | Admin (owner only) | `/admin/users`, `/admin/settings` | Admin\UserController, Admin\SettingsController |
 | Horizon (owner only) | `/horizon` | Horizon |
@@ -449,7 +449,7 @@ The rate limiters are in `RouteServiceProvider`: `api`, `preview`, `editor-docum
 - **Sanctum** gives API tokens with abilities: `api_requests` for the REST API and the MCP server, and `signed_url` for signed-URL keys.
 - **Passport** gives OAuth 2.0 access tokens to MCP clients. Clients register themselves at `POST /oauth/register`. `MCP_REDIRECT_DOMAINS` limits where an authorization code can go.
 - **Roles**: `admin` and `customer` can both create content (`User::actsAsCustomer()`). Only an owner (`is_owner`) can open the admin area and Horizon.
-- **Company roles**: `users.company_role` is `owner` or `member`. All users of a company share its content: templates, snaps, collections, forms, tags and media. Only an owner can change the company itself: rename it, rotate the webhook secret, create or cancel invitations, delete fonts and change roles. A company with active users always keeps at least one active owner. `CompanyPolicy` holds the access rules, and `CompanyOwners` holds the owner rule. The instance owner (`is_owner`) and a company owner are two different roles.
+- **Company roles**: `users.company_role` is `owner` or `member`. All users of a company share its content: templates, snaps, collections, forms, tags and media. Each active user of the company can upload a font. Only an owner can change the company itself: rename it, rotate the webhook secret, create or cancel invitations, delete fonts, change roles and remove users. A removal deactivates the account, the same as **Admin > Users**. The templates and snaps of the user stay in the company. The last active owner cannot be removed. A company with active users always keeps at least one active owner. `CompanyPolicy` holds the access rules, and `CompanyOwners` holds the owner rule. The instance owner (`is_owner`) and a company owner are two different roles.
 - **Company scoping**: queries filter by the `company_id` of the user. A record of another company answers 404.
 - **Policies**: `TemplatePolicy`, `FontPolicy` and `CompanyPolicy` in `app/Policies` check the company of the record and the role of the user.
 
