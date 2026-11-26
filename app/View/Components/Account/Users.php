@@ -4,6 +4,7 @@ namespace App\View\Components\Account;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Support\CompanyOwners;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -20,8 +21,6 @@ class Users extends Component
 
     public bool $canManageMembers;
 
-    public int $ownerCount;
-
     public function __construct(
         public Company $company,
         public Collection $users,
@@ -29,7 +28,12 @@ class Users extends Component
     ) {
         $this->canInvite = Gate::allows('manageInvitations', $company);
         $this->canManageMembers = Gate::allows('manageMembers', $company);
-        $this->ownerCount = $users->filter(fn (User $user) => $user->isCompanyOwner())->count();
+    }
+
+    /** The same rule as the server: another active owner must stay. */
+    public function canBecomeMember(User $user): bool
+    {
+        return CompanyOwners::hasOtherActiveOwner($this->users, $user);
     }
 
     public function render(): View

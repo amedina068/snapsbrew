@@ -154,6 +154,7 @@ Each command accepts `--json` for scripts and agents.
 | `snapsbrew:doctor` | Finds problems and gives the fix for each. `--fix` applies the safe fixes. |
 | `snapsbrew:setup-url` | Shows the setup URL again. |
 | `snapsbrew:user:password` | Sets a new password for a user. |
+| `snapsbrew:user:role` | Sets the company role of a user: `owner` or `member`. |
 | `snapsbrew:starter-templates` | Adds the starter templates to the company of a user. |
 | `snapsbrew:mcp:connect` | Prints the line that connects an AI agent. |
 

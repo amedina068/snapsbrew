@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Schema;
  * Adds the role of a user in the company: `owner` or `member`.
  *
  * Every existing row gets the default `member`. The backfill then makes the
- * founder of each company an `owner`. The founder is the user with the lowest
- * id in the company, the same rule as the old `User::isCompanyFounder()`.
+ * founder of each company an `owner`. The founder is the active user with the
+ * lowest id in the company. A deactivated user cannot manage the company, so
+ * the backfill skips a deactivated founder. If no user of the company is
+ * active, the founder is the user with the lowest id.
  *
  * The backfill reads the founder ids first and then updates them in chunks.
  * One `UPDATE ... WHERE id IN (SELECT ... FROM users)` statement fails on
@@ -31,11 +33,20 @@ return new class extends Migration
 
     public function backfill(): void
     {
-        $founderIds = DB::table('users')
+        $activeFounders = DB::table('users')
+            ->whereNotNull('company_id')
+            ->whereNull('deactivated_at')
+            ->groupBy('company_id')
+            ->selectRaw('company_id, MIN(id) AS id')
+            ->pluck('id', 'company_id');
+
+        $founders = DB::table('users')
             ->whereNotNull('company_id')
             ->groupBy('company_id')
-            ->selectRaw('MIN(id) AS id')
-            ->pluck('id');
+            ->selectRaw('company_id, MIN(id) AS id')
+            ->pluck('id', 'company_id');
+
+        $founderIds = $founders->replace($activeFounders)->values();
 
         foreach ($founderIds->chunk(500) as $chunk) {
             DB::table('users')->whereIn('id', $chunk->all())->update(['company_role' => 'owner']);

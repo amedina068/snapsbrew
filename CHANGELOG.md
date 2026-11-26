@@ -8,7 +8,15 @@ This file lists the changes to the code for each release. The release notes for 
 
 ## [Unreleased]
 
+### Added
+
+- `php artisan snapsbrew:user:role <email> owner|member [--json]` sets the company role of a user. It uses the same rule as **Account > Users**. The exit code is 2 for bad input and 3 when the user is the last active owner of the company.
+- `snapsbrew:doctor` has the check `company_owners`. It warns about each company that has active users but no active owner. The fix line gives a `snapsbrew:user:role` command for each company.
+
 ### Fixed
+
+- A company that has active users always keeps an active owner. **Admin > Users** refuses to deactivate the last active owner of such a company. **Account > Users** refuses to make the last active owner a member. A deactivated owner does not count as an owner for these rules.
+- The `company_role` migration skips a deactivated founder. It makes the active user with the lowest id the owner. A delete of the last owner also makes the oldest active user the owner.
 
 - In the Docker image, Chromium keeps the fontconfig cache in `/var/www/.cache/fontconfig`. The build fills this folder with `fc-cache`. The check `fonts_cache` of `snapsbrew:doctor` reads the same folder and now reports `ok`.
 

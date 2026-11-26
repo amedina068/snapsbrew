@@ -36,6 +36,7 @@ class AgentOperations
             '- `php artisan snapsbrew:token:create --user=<email> --name=<name> --json`, `snapsbrew:token:list` and `snapsbrew:token:revoke <id>`: the API tokens.',
             '- `php artisan snapsbrew:mcp:connect --client=claude|codex|cursor|json [--token=new]`: the connect command or config for one client.',
             '- `php artisan snapsbrew:user:list --json`, `snapsbrew:user:password <email> --generate --json` and `snapsbrew:setup-url --json`: the users and the setup page.',
+            '- `php artisan snapsbrew:user:role <email> owner|member --json`: the company role of a user. Each company with active users keeps an active owner. If the doctor check `company_owners` warns, run its fix line.',
             '- The instance-admin MCP server runs over stdio: `ssh <host> docker exec -i <container> php artisan mcp:start '.InstanceAdminServer::HANDLE.'`.',
             '  It has tools for status, doctor, users, invitations, tokens, settings, the queue, recent errors, a test email and the starter templates.',
             '- These actions stay on the command line: create the owner, promote or demote an owner, rotate keys, revoke all tokens and delete data.',
