@@ -9,8 +9,13 @@ if [ "${RENDER_DRIVER:-browsershot}" = "browserless" ] || [ "${SNAPSBREW_CHROMIU
     exec /command/s6-pause
 fi
 
-export HOME=/tmp/chromium-home XDG_CACHE_HOME=/tmp/chromium-home/.cache XDG_CONFIG_HOME=/tmp/chromium-home/.config
-mkdir -p "$XDG_CACHE_HOME" "$XDG_CONFIG_HOME"
+# Chromium keeps the fontconfig cache in the cache folder of the image user
+# (/var/www/.cache). The Dockerfile makes this folder and fills it. The check
+# fonts_cache of snapsbrew:doctor reads the same folder (InstanceDoctor::
+# fontsCachePath). The other files of Chromium stay in /tmp.
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME:-/var/www}/.cache}"
+export HOME=/tmp/chromium-home XDG_CONFIG_HOME=/tmp/chromium-home/.config
+mkdir -p "$XDG_CACHE_HOME/fontconfig" "$XDG_CONFIG_HOME"
 
 # The container has no user namespaces, so the Chromium sandbox cannot start.
 # Chromium writes a line for each start and each tab. The log shows only the

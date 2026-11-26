@@ -8,6 +8,10 @@ This file lists the changes to the code for each release. The release notes for 
 
 ## [Unreleased]
 
+### Fixed
+
+- In the Docker image, Chromium keeps the fontconfig cache in `/var/www/.cache/fontconfig`. The build fills this folder with `fc-cache`. The check `fonts_cache` of `snapsbrew:doctor` reads the same folder and now reports `ok`.
+
 ## [0.1.0] - 2026-11-25
 
 The first public release.
