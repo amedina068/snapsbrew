@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\Template;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Tests\Support\FakeRenderer;
 use Tests\TestCase;
@@ -88,6 +89,24 @@ class TemplatePreviewRenderTest extends TestCase
 
         $this->assertCount(1, $this->renderer->screenshotCalls);
         $this->assertSame($after, $this->previewUrl());
+    }
+
+    /**
+     * MySQL stores `layers` in a JSON column and returns it with its own
+     * spacing and key order. The same layers in another format are not a
+     * change of the image.
+     */
+    public function test_a_patch_with_the_same_layers_in_another_json_format_renders_nothing()
+    {
+        DB::table('templates')->where('id', $this->template->id)->update([
+            'layers' => '[{"properties": [{"value": "Before", "name": "textContent"}], "key": "headline"}]',
+        ]);
+        $before = $this->previewUrl();
+
+        $this->patchTemplate(['layers' => $this->layers('Before')])->assertOk();
+
+        $this->assertCount(0, $this->renderer->screenshotCalls);
+        $this->assertSame($before, $this->previewUrl());
     }
 
     public function test_a_patch_of_only_the_title_renders_nothing_and_keeps_the_preview_url()

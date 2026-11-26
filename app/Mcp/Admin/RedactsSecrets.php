@@ -27,11 +27,11 @@ trait RedactsSecrets
             config('passport.private_key'),
         ]), fn (string $value) => strlen($value) >= 6);
 
-        if ($secrets !== []) {
-            $text = str_replace($secrets, '[redacted]', $text);
-        }
-
-        return (string) preg_replace([
+        // The patterns run first. A secret value can be the name of a
+        // parameter, for example the database password `password`. A replace
+        // of that value first removes the name, and the pattern then misses
+        // the parameter value.
+        $text = (string) preg_replace([
             '/(Bearer\s+)[A-Za-z0-9._~+\/=|-]+/i',
             '/\b\d+\|[A-Za-z0-9]{20,}/',
             '/base64:[A-Za-z0-9+\/=]{20,}/',
@@ -44,5 +44,7 @@ trait RedactsSecrets
             '$1[redacted]',
             '$1[redacted]$2',
         ], $text);
+
+        return $secrets === [] ? $text : str_replace($secrets, '[redacted]', $text);
     }
 }

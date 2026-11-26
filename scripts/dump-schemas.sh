@@ -16,11 +16,18 @@
 #   1. It starts a temporary mysql:8.4 container.
 #   2. It runs every migration on that MySQL database and on a new SQLite file.
 #   3. It dumps MySQL with the mysqldump of MySQL 8.4 and the flags of Laravel.
-#   4. It dumps SQLite with `php artisan schema:dump`.
+#   4. It dumps SQLite with `php artisan schema:dump` and the sqlite3 client
+#      of Ubuntu 24.04 in a container.
 #   5. It removes the container.
 #
+# The text of `.schema` changes between sqlite3 versions. For example, sqlite3
+# 3.45 writes `CREATE TABLE IF NOT EXISTS` and sqlite3 3.54 writes
+# `CREATE TABLE`. A dump from the sqlite3 client of the host thus fails the
+# "Schema dumps" check of CI. The container gives the same client to each
+# machine.
+#
 # Usage: scripts/dump-schemas.sh
-# Needs: docker, php with pdo_mysql and pdo_sqlite, sqlite3.
+# Needs: docker, php with pdo_mysql and pdo_sqlite.
 #
 # Run it again after you add migrations. It is not required: Laravel runs a new
 # migration after the dump loads.
@@ -31,6 +38,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 SCHEMA_DIR="$REPO_ROOT/database/schema"
 CONTAINER="snapsbrew-schema-dump-$$"
+SQLITE_IMAGE="snapsbrew-schema-sqlite3:ubuntu-24.04"
 WORK_DIR="$(mktemp -d)"
 
 DATA_MIGRATIONS=(
@@ -56,7 +64,10 @@ docker run -d --name "$CONTAINER" --tmpfs /var/lib/mysql:rw,size=2g \
     -e MYSQL_DATABASE=snapsbrew -e MYSQL_ROOT_PASSWORD=root \
     -p 127.0.0.1::3306 mysql:8.4 --skip-log-bin > /dev/null
 port="$(docker port "$CONTAINER" 3306/tcp | head -1 | sed 's/.*://')"
-until docker exec "$CONTAINER" mysql -uroot -proot -e 'select 1' snapsbrew > /dev/null 2>&1; do
+# The image first starts a temporary server for the init, with no TCP port.
+# A check on the socket can pass on that server, and the migrations then
+# connect while it stops. A check on TCP passes only on the final server.
+until docker exec "$CONTAINER" mysql -h127.0.0.1 --protocol=TCP -uroot -proot -e 'select 1' snapsbrew > /dev/null 2>&1; do
     sleep 1
 done
 
@@ -74,11 +85,28 @@ dump=(docker exec "$CONTAINER" mysqldump -uroot -proot --no-tablespaces --skip-a
 "${dump[@]}" snapsbrew migrations --no-create-info --skip-extended-insert --skip-routines \
     --compact --complete-insert 2> /dev/null >> "$WORK_DIR/mysql-schema.sql"
 
+echo "Preparing the sqlite3 client of Ubuntu 24.04..."
+docker build -q -t "$SQLITE_IMAGE" - > /dev/null <<'DOCKERFILE'
+FROM ubuntu:24.04
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+DOCKERFILE
+
+# `php artisan schema:dump` runs `sqlite3` from PATH. This wrapper runs the
+# client of the container on the database file in WORK_DIR.
+mkdir -p "$WORK_DIR/bin"
+cat > "$WORK_DIR/bin/sqlite3" <<WRAPPER
+#!/usr/bin/env bash
+exec docker run --rm -i -u "$(id -u):$(id -g)" -v "$WORK_DIR:$WORK_DIR" "$SQLITE_IMAGE" sqlite3 "\$@"
+WRAPPER
+chmod +x "$WORK_DIR/bin/sqlite3"
+
 echo "Running the migrations on SQLite..."
 touch "$WORK_DIR/database.sqlite"
 DB_CONNECTION=sqlite DB_DATABASE="$WORK_DIR/database.sqlite" \
     php artisan migrate --force --no-interaction > /dev/null
-DB_CONNECTION=sqlite DB_DATABASE="$WORK_DIR/database.sqlite" \
+PATH="$WORK_DIR/bin:$PATH" DB_CONNECTION=sqlite DB_DATABASE="$WORK_DIR/database.sqlite" \
     php artisan schema:dump --no-interaction > /dev/null
 
 mv "$WORK_DIR/mysql-schema.sql" "$SCHEMA_DIR/mysql-schema.sql"

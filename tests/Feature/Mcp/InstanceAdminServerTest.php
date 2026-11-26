@@ -313,6 +313,27 @@ class InstanceAdminServerTest extends TestCase
         $this->assertCount(3, $withWarnings['entries']);
     }
 
+    /**
+     * CI sets DB_PASSWORD=password. The value of a secret can thus be the
+     * name of a parameter. The parameter value must still go.
+     */
+    public function test_read_recent_errors_removes_a_parameter_value_when_a_secret_is_the_parameter_name()
+    {
+        $log = storage_path('logs/admin-tool-test.log');
+        config(['database.connections.pgsql.password' => 'password']);
+        file_put_contents($log, "[2026-11-25 10:01:00] testing.ERROR: login failed with password=hunter2hunter2\n");
+        touch($log, time() + 60);
+
+        try {
+            $data = $this->payload(InstanceAdminServer::tool(ReadRecentErrorsTool::class, []));
+        } finally {
+            @unlink($log);
+        }
+
+        $this->assertCount(1, $data['entries']);
+        $this->assertStringNotContainsString('hunter2hunter2', json_encode($data));
+    }
+
     public function test_send_test_email_sends_to_the_owner_by_default()
     {
         Mail::fake();

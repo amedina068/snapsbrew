@@ -54,8 +54,9 @@ class MySqlCreativePackageAccessPlanTest extends TestCase
         $this->assertSame(self::SEED_PACKAGES, DB::table('creative_packages')->whereIn('company_id', $companyIds)->count());
         $this->assertSame(19_875, DB::table('creative_package_items')->whereIn('company_id', $companyIds)->count());
         $this->assertLessThan(30.0, self::$seedSeconds, 'The seed took '.round(self::$seedSeconds, 1).' seconds.');
-        // The suite runs near the 128 MB limit. A seed that keeps its bindings fails a later test in another file.
-        $this->assertLessThan(128 * 1024 * 1024, self::$seedMemoryBytes, 'The process held '.round(self::$seedMemoryBytes / 1024 / 1024).' MB after the seed.');
+        // A seed that keeps its bindings holds the memory for the rest of the suite. The bound is on the growth over
+        // the seed, because the absolute value depends on the tests that ran before in the same process.
+        $this->assertLessThan(32 * 1024 * 1024, self::$seedMemoryBytes, 'The seed added '.round(self::$seedMemoryBytes / 1024 / 1024).' MB to the process.');
     }
 
     public function test_the_batched_source_lookup_for_ten_items_seeks_both_unique_indexes(): void

@@ -271,7 +271,7 @@ class Template extends Model implements HasMedia
      */
     public function saveWithPreview(): void
     {
-        if ($this->hasMedia('preview') && ! $this->isDirty(self::PREVIEW_ATTRIBUTES)) {
+        if ($this->hasMedia('preview') && ! $this->previewAttributesChanged()) {
             $this->save();
 
             return;
@@ -281,6 +281,64 @@ class Template extends Model implements HasMedia
 
         $this->save();
         $this->storePreview($image);
+    }
+
+    /**
+     * Tells if the unsaved attributes change the preview image.
+     *
+     * MySQL stores `layers` in a JSON column. It returns the JSON with its own
+     * spacing and key order, so a compare of the strings reports a change for
+     * the same layers. This method compares the decoded JSON of `layers` and
+     * `groups`.
+     */
+    private function previewAttributesChanged(): bool
+    {
+        foreach (self::PREVIEW_ATTRIBUTES as $attribute) {
+            if (! $this->isDirty($attribute)) {
+                continue;
+            }
+
+            if (! in_array($attribute, ['layers', 'groups'], true)) {
+                return true;
+            }
+
+            $original = self::canonicalJson($this->getRawOriginal($attribute));
+            $current = self::canonicalJson($this->getAttributes()[$attribute] ?? null);
+
+            if ($original !== $current) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Decodes a JSON string and sorts the keys of each object. A value that
+     * is not valid JSON stays as it is.
+     */
+    private static function canonicalJson(mixed $value): mixed
+    {
+        if (! is_string($value)) {
+            return self::sortKeys($value);
+        }
+
+        $decoded = json_decode($value, true);
+
+        return json_last_error() === JSON_ERROR_NONE ? self::sortKeys($decoded) : $value;
+    }
+
+    private static function sortKeys(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return array_map(fn ($item) => self::sortKeys($item), $value);
     }
 
     public function generatePreviewImage()

@@ -46,6 +46,27 @@ class McpToolsTest extends TestCase
         $this->app->bind(SnapRenderer::class, FakeRenderer::class);
     }
 
+    /**
+     * MySQL returns a JSON column with its keys in its own order. This
+     * assertion sorts the keys of each object on both sides, then compares
+     * the values with their types.
+     */
+    private function assertSameJson(array $expected, string $json): void
+    {
+        $sort = function (mixed $value) use (&$sort): mixed {
+            if (! is_array($value)) {
+                return $value;
+            }
+            if (! array_is_list($value)) {
+                ksort($value);
+            }
+
+            return array_map($sort, $value);
+        };
+
+        $this->assertSame($sort($expected), $sort(json_decode($json, true, 512, JSON_THROW_ON_ERROR)));
+    }
+
     private function makeUser(): User
     {
         $company = Company::factory()->create();
@@ -227,8 +248,8 @@ class McpToolsTest extends TestCase
         ])->assertOk()->assertSee('"revision": 1');
 
         $template->refresh();
-        $this->assertSame($document['layers'], json_decode($template->layers, true, 512, JSON_THROW_ON_ERROR));
-        $this->assertSame($document['groups'], json_decode($template->groups, true, 512, JSON_THROW_ON_ERROR));
+        $this->assertSameJson($document['layers'], $template->layers);
+        $this->assertSameJson($document['groups'], $template->groups);
 
         $source = DB::transaction(function () use ($template) {
             $versioner = app(SnapSourceVersioner::class);
@@ -245,8 +266,8 @@ class McpToolsTest extends TestCase
         ])->assertHasErrors()->assertSee('editor_document_conflict');
 
         $template->refresh();
-        $this->assertSame($document['layers'], json_decode($template->layers, true, 512, JSON_THROW_ON_ERROR));
-        $this->assertSame($document['groups'], json_decode($template->groups, true, 512, JSON_THROW_ON_ERROR));
+        $this->assertSameJson($document['layers'], $template->layers);
+        $this->assertSameJson($document['groups'], $template->groups);
     }
 
     public function test_put_editor_document_rejects_unsafe_or_invalid_layers_without_changing_the_draft(): void
@@ -254,11 +275,13 @@ class McpToolsTest extends TestCase
         $user = $this->makeUser();
         $template = $this->template($user);
         $template->forceFill(['groups' => '[{"id":"existing","visible":true}]'])->save();
+        // Read the stored row. MySQL returns a JSON column with its own format.
+        $stored = $template->fresh();
         $original = [
-            'document' => $template->editor_document,
-            'revision' => $template->editor_revision,
-            'layers' => $template->layers,
-            'groups' => $template->groups,
+            'document' => $stored->editor_document,
+            'revision' => $stored->editor_revision,
+            'layers' => $stored->layers,
+            'groups' => $stored->groups,
         ];
 
         $cases = [
@@ -303,11 +326,13 @@ class McpToolsTest extends TestCase
     {
         $user = $this->makeUser();
         $template = $this->template($user);
+        // Read the stored row. MySQL returns a JSON column with its own format.
+        $stored = $template->fresh();
         $original = [
-            'document' => $template->editor_document,
-            'revision' => $template->editor_revision,
-            'layers' => $template->layers,
-            'groups' => $template->groups,
+            'document' => $stored->editor_document,
+            'revision' => $stored->editor_revision,
+            'layers' => $stored->layers,
+            'groups' => $stored->groups,
         ];
 
         $cases = [
