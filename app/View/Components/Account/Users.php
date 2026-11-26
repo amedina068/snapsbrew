@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\View\Component;
 
 /**
- * Owners invite people, cancel invitations and change roles. A member sees
+ * Owners invite people, cancel invitations, change roles and remove users. A member sees
  * the same lists without these actions, and a short reason. The server
  * checks CompanyPolicy for each action.
  */
@@ -34,6 +34,18 @@ class Users extends Component
     public function canBecomeMember(User $user): bool
     {
         return CompanyOwners::hasOtherActiveOwner($this->users, $user);
+    }
+
+    /**
+     * The same rules as the server: the user is active, is not the owner of
+     * the instance, and is not the last active owner of the company.
+     */
+    public function canRemove(User $user): bool
+    {
+        return $this->canManageMembers
+            && ! $user->isDeactivated()
+            && ! $user->isOwner()
+            && (! $user->isCompanyOwner() || CompanyOwners::hasOtherActiveOwner($this->users, $user));
     }
 
     public function render(): View

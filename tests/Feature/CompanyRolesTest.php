@@ -9,6 +9,10 @@ use App\Models\CompanyInvitation;
 use App\Models\Font;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
@@ -191,6 +195,80 @@ class CompanyRolesTest extends TestCase
     }
 
     // Fonts
+
+    public function test_an_owner_can_upload_a_company_font(): void
+    {
+        [$company, $owner] = $this->companyWithOwnerAndMember();
+
+        $this->assertTrue(Gate::forUser($owner)->allows('create', [Font::class, $company]));
+        $this->uploadFont($owner)->assertSessionHasNoErrors()->assertSessionHas('status', 'Font uploaded.');
+
+        $this->assertDatabaseHas('fonts', ['company_id' => $company->id, 'user_id' => $owner->id, 'family' => 'Brand Sans']);
+    }
+
+    public function test_a_member_can_upload_a_company_font(): void
+    {
+        [$company, , $member] = $this->companyWithOwnerAndMember();
+
+        $this->assertTrue(Gate::forUser($member)->allows('create', [Font::class, $company]));
+        $this->uploadFont($member)->assertSessionHasNoErrors()->assertSessionHas('status', 'Font uploaded.');
+
+        $this->assertDatabaseHas('fonts', ['company_id' => $company->id, 'user_id' => $member->id, 'family' => 'Brand Sans']);
+    }
+
+    public function test_a_user_of_another_company_cannot_upload_a_font_for_the_company(): void
+    {
+        [$company] = $this->companyWithOwnerAndMember();
+        [, $stranger] = $this->companyWithOwnerAndMember();
+
+        $this->assertTrue(Gate::forUser($stranger)->denies('create', [Font::class, $company]));
+    }
+
+    public function test_a_deactivated_user_cannot_upload_a_font(): void
+    {
+        [$company, , $member] = $this->companyWithOwnerAndMember();
+        $member->deactivate();
+
+        $this->assertTrue(Gate::forUser($member)->denies('create', [Font::class, $company]));
+    }
+
+    public function test_the_font_upload_checks_the_font_policy_for_the_company_of_the_user(): void
+    {
+        [$company, , $member] = $this->companyWithOwnerAndMember();
+        $checked = [];
+        Gate::after(function (User $user, string $ability, ?bool $result, array $arguments) use (&$checked) {
+            if ($ability === 'create' && ($arguments[0] ?? null) === Font::class) {
+                $checked[] = [$user->id, $arguments[1]->id ?? null, $result];
+            }
+        });
+
+        $this->uploadFont($member)->assertSessionHasNoErrors();
+
+        $this->assertSame([[$member->id, $company->id, true]], $checked);
+    }
+
+    public function test_the_fonts_page_shows_the_upload_form_to_an_owner_and_a_member(): void
+    {
+        [, $owner, $member] = $this->companyWithOwnerAndMember();
+
+        foreach ([$owner, $member] as $user) {
+            $this->actingAs($user)->get('/fonts')
+                ->assertOk()
+                ->assertSee('action="'.url('/fonts').'"', false)
+                ->assertSee('Upload font');
+        }
+    }
+
+    private function uploadFont(User $user): TestResponse
+    {
+        Storage::fake('public');
+
+        return $this->actingAs($user)->post('/fonts', [
+            'name' => 'Brand Sans',
+            'family' => 'Brand Sans',
+            'file' => UploadedFile::fake()->createWithContent('brand.woff', 'wOFF'.str_repeat('A', 200)),
+        ]);
+    }
 
     public function test_a_member_cannot_delete_a_company_font(): void
     {

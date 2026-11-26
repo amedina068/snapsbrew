@@ -11,6 +11,8 @@ This file lists the changes to the code for each release. The release notes for 
 ### Added
 
 - `php artisan snapsbrew:user:role <email> owner|member [--json]` sets the company role of a user. It uses the same rule as **Account > Users**. The exit code is 2 for bad input and 3 when the user is the last active owner of the company.
+- A company owner can remove a user from **Account > Users**. The page asks for a confirmation first. The removal deactivates the account with the same rule as **Admin > Users**. The user cannot sign in, and the API tokens, OAuth connections and signed URLs of the user stop working. The templates and snaps of the user stay in the company. The last active owner and the owner of the instance cannot be removed. A member cannot remove users.
+- `FontPolicy::create` decides who can upload a font. Each active user of the company, owner or member, can upload a font. `POST /fonts` now checks this policy.
 - `snapsbrew:doctor` has the check `company_owners`. It warns about each company that has active users but no active owner. The fix line gives a `snapsbrew:user:role` command for each company.
 
 ### Fixed

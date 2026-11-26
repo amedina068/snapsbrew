@@ -21,6 +21,9 @@
   @error('role')
     <p class="mb-4 text-sm text-red-700" role="alert">{{ $message }}</p>
   @enderror
+  @error('remove')
+    <p class="mb-4 text-sm text-red-700" role="alert">{{ $message }}</p>
+  @enderror
 
   <x-ui.table caption="Team members">
     <x-slot name="head">
@@ -43,9 +46,13 @@
         <x-ui.td>{{ $member->email }}</x-ui.td>
         <x-ui.td>
           <x-ui.badge :tone="$isOwner ? 'brand' : 'neutral'">{{ $isOwner ? 'Owner' : 'Member' }}</x-ui.badge>
+          @if ($member->isDeactivated())
+            <x-ui.badge tone="warning" class="ml-2">Deactivated</x-ui.badge>
+          @endif
         </x-ui.td>
         @if ($canManageMembers)
           <x-ui.td align="right">
+            <div class="flex items-center justify-end gap-2">
             @if (! $isOwner)
               <form method="POST" action="/account/users/{{ $member->id }}/role"
                     onsubmit="return confirm(@js("Make {$member->email} an owner? An owner can change the company, its invitations, its fonts and the roles of all users."))">
@@ -65,6 +72,17 @@
             @else
               <span class="text-xs text-gray-500">The last active owner stays an owner.</span>
             @endif
+            @if ($canRemove($member))
+              <form method="POST" action="/account/users/{{ $member->id }}"
+                    onsubmit="return confirm(@js($member->id === Auth::id()
+                      ? 'Remove yourself from the company? You cannot sign in after this, and every token and signed URL of your account stops working. Your templates and snaps stay in the company.'
+                      : "Remove {$member->email} from the company? This user cannot sign in after this, and every token and signed URL of this user stops working. The templates and snaps of this user stay in the company."))">
+                @method('DELETE')
+                @csrf
+                <x-ui.button size="sm" variant="danger-ghost" aria-label="Remove {{ $member->email }} from the company">Remove</x-ui.button>
+              </form>
+            @endif
+            </div>
           </x-ui.td>
         @endif
       </tr>

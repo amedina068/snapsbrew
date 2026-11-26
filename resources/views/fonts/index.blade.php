@@ -21,6 +21,7 @@
       </div>
     @endif
 
+    @can('create', [\App\Models\Font::class, Auth::user()->company])
     <x-ui.panel title="Upload a font" class="mb-10">
       <form action="{{ url('/fonts') }}" method="POST" enctype="multipart/form-data">
         @csrf
@@ -45,6 +46,7 @@
         <x-ui.button class="mt-5" icon="arrow-up-tray">Upload font</x-ui.button>
       </form>
     </x-ui.panel>
+    @endcan
 
     <h2 class="mb-3 text-lg font-semibold text-gray-900">Your fonts</h2>
 
