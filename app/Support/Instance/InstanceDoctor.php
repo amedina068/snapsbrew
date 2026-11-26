@@ -9,6 +9,8 @@ use Closure;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Laravel\Passport\Passport;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\NullOutput;
 use Throwable;
 
 /**
@@ -350,13 +352,30 @@ class InstanceDoctor
     {
         try {
             match ($id) {
-                'storage_link' => Artisan::call('storage:link'),
-                'passport_keys' => Artisan::call('passport:keys'),
+                'storage_link' => self::callQuietly('storage:link'),
+                'passport_keys' => self::callQuietly('passport:keys'),
                 'fonts_cache' => ($path = self::fontsCachePath()) && ! is_dir($path) && @mkdir($path, 0755, true),
             };
         } catch (Throwable) {
             // The check runs again after the repair and reports the result.
         }
+    }
+
+    /**
+     * Runs an Artisan command of a repair with no output.
+     *
+     * `Artisan::call()` replaces the output that `Artisan::output()` returns.
+     * A caller that runs `snapsbrew:doctor --fix --json` in the same process
+     * then reads the line of the repair command instead of the JSON object.
+     * This method runs the command directly, so the JSON object stays the
+     * only output.
+     */
+    private static function callQuietly(string $command): int
+    {
+        $input = new ArrayInput([]);
+        $input->setInteractive(false);
+
+        return Artisan::all()[$command]->run($input, new NullOutput);
     }
 
     /**
