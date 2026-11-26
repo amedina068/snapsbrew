@@ -1,0 +1,79 @@
+name: Release
+
+# A push of a "v*" tag creates a GitHub release. The notes of the release are
+# the section of CHANGELOG.md for that version. If the release exists, the job
+# changes nothing and ends with success. docker-publish.yml publishes the
+# Docker image for the same tag.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Create the GitHub release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Look for an existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "The release $TAG exists. The job changes nothing."
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The section starts after the line "## [<version>]" and stops before
+      # the next "## [" line. The link lines at the end of the file, for
+      # example "[0.1.0]: https://...", are not part of the notes.
+      - name: Read the notes from CHANGELOG.md
+        if: steps.existing.outputs.found == 'false'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          awk -v heading="## [${version}]" '
+            index($0, "## [") == 1 {
+              if (found) exit
+              if (index($0, heading) == 1) { found = 1; next }
+            }
+            found && !/^\[[^]]+\]: / { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          if ! grep -q '[^[:space:]]' "$RUNNER_TEMP/release-notes.md"; then
+            echo "::error file=CHANGELOG.md::CHANGELOG.md has no section for version ${version}."
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/release-notes.md"
+
+      # A tag with a hyphen, for example v1.3.0-rc.1, makes a pre-release.
+      - name: Create the release
+        if: steps.existing.outputs.found == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags=()
+          if [[ "$TAG" == *-* ]]; then
+            flags+=(--prerelease)
+          fi
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" \
+            --verify-tag \
+            "${flags[@]}"

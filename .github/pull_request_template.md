@@ -14,6 +14,7 @@
 - [ ] `npm run build` passes (when the front-end changes).
 - [ ] `npm run test:editor` passes (when the editor changes).
 - [ ] `php artisan migrate:fresh --seed` passes (when a migration changes).
+- [ ] The PR title follows Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:` and similar).
 
 ## Compatibility
 

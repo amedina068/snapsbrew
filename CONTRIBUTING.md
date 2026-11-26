@@ -112,6 +112,20 @@ The script runs `php artisan api:export`. The command writes the spec, then runs
 
 Commit the changed files with the change to `ApiSpec.php`. The CI runs the same script and fails when `git diff` shows a change in `docs/api`.
 
+## Pull request titles
+
+The title of a pull request must follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/). The `PR title` check of the CI fails if the title does not follow it. The titles of the merged pull requests become the lines of the release notes, so a clear title helps each user.
+
+Start the title with a type: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore` or `revert`. A scope in parentheses is optional. Examples:
+
+- `feat: add the batch cancel endpoint`
+- `fix(editor): keep the layer order after an undo`
+- `docs: explain the backup of the media disk`
+
+## Triage
+
+Each new issue gets the `needs-triage` label. The maintainer reads the issue and replaces `needs-triage` with a type label, for example `bug`, `enhancement`, `documentation` or `question`.
+
 ## Release notes
 
 If a pull request has a change that users can see, add a `## Release note` section to its body. Write one or two short sentences in plain text. You can put code and names in backticks. Do not use Markdown links or HTML. Tell the user what changed.
