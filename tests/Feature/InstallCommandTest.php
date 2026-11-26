@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Contracts\SnapRenderer;
+use App\Jobs\GenerateTemplatePreview;
 use App\Models\Template;
 use App\Models\User;
+use App\Services\OnboardingSnapDispatcher;
 use App\Support\StarterTemplates;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakeRenderer;
 use Tests\Support\WithPassportKeys;
 use Tests\TestCase;
@@ -40,6 +43,25 @@ class InstallCommandTest extends TestCase
         $this->assertNotNull($owner->email_verified_at);
         $this->assertTrue(Hash::check('a-long-password-1', $owner->password));
         $this->assertDatabaseHas('api_keys', ['user_id' => $owner->id]);
+    }
+
+    public function test_install_publishes_the_welcome_template_copy_and_queues_its_preview()
+    {
+        Queue::fake();
+
+        $this->artisan('snapsbrew:install', [
+            '--name' => 'Olive Owner',
+            '--email' => 'owner@example.com',
+        ])->expectsConfirmation(self::STARTER_QUESTION, 'no')->assertSuccessful();
+
+        $owner = User::where('email', 'owner@example.com')->firstOrFail();
+        $copy = Template::query()
+            ->where('company_id', $owner->company_id)
+            ->where('title', OnboardingSnapDispatcher::SHOWCASE_TITLE)
+            ->firstOrFail();
+
+        $this->assertNotNull($copy->published_version_id);
+        Queue::assertPushed(GenerateTemplatePreview::class, fn (GenerateTemplatePreview $job) => $job->template->is($copy));
     }
 
     public function test_install_works_while_registration_is_closed()
