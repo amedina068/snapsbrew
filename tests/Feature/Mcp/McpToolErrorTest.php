@@ -276,7 +276,8 @@ class McpToolErrorTest extends TestCase
             'editor_schema_version' => 2,
             'editor_revision' => 1,
         ])->save();
-        $layersBefore = $template->getRawOriginal('layers');
+        // Read the stored value. MySQL returns a JSON column with its own format.
+        $layersBefore = $template->fresh()->getRawOriginal('layers');
 
         $response = SnapsbrewServer::actingAs($user)->tool(EditTemplateTool::class, [
             'template_id' => $template->uuid,

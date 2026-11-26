@@ -26,8 +26,10 @@ class MediaLibraryAdderCharacterizationTest extends TestCase
     private const PNG_BASE64 =
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/1P3AAAAAElFTkSuQmCC';
 
-    // L8 baseline for a single User imagesMedia upload (media id 1, file avatar.png).
-    private const EXPECTED_USER_MEDIA_URL_L8 = '/storage/1/avatar.png';
+    // L8 baseline for a single User imagesMedia upload (file avatar.png). The
+    // `%d` is the media id. MySQL does not reset the id sequence between tests,
+    // so the id is not always 1.
+    private const EXPECTED_USER_MEDIA_URL_L8 = '/storage/%d/avatar.png';
 
     public function test_add_media_from_string_stores_one_item()
     {
@@ -58,11 +60,11 @@ class MediaLibraryAdderCharacterizationTest extends TestCase
         Storage::fake('public');
         $user = User::factory()->create();
 
-        $user->addMedia(UploadedFile::fake()->image('avatar.png'))
+        $media = $user->addMedia(UploadedFile::fake()->image('avatar.png'))
             ->toMediaCollection('imagesMedia');
 
         $this->assertSame(
-            self::EXPECTED_USER_MEDIA_URL_L8,
+            sprintf(self::EXPECTED_USER_MEDIA_URL_L8, $media->id),
             $user->fresh()->getFirstMediaUrl('imagesMedia')
         );
 
@@ -70,7 +72,7 @@ class MediaLibraryAdderCharacterizationTest extends TestCase
         // getUrl; pin its tail so a medialibrary 10 path-format drift (which
         // would break Snap::imagePath / signed-URL responses) surfaces too.
         $this->assertStringEndsWith(
-            '/1/avatar.png',
+            "/{$media->id}/avatar.png",
             $user->fresh()->getFirstMediaPath('imagesMedia')
         );
     }

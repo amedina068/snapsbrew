@@ -64,7 +64,8 @@ class ApplyEditorOperationsToolTest extends TestCase
     public function test_it_rejects_invalid_or_injected_operations_without_mutating_the_document(): void
     {
         [, $template, $token] = $this->templateWithDocument();
-        $original = $template->editor_document;
+        // Read the stored document. MySQL returns a JSON column with its own key order.
+        $original = $template->fresh()->editor_document;
 
         $cases = [
             [['operation' => 'set_layer_property', 'layer_key' => 'missing', 'property' => 'imageFit', 'value' => 'cover'], 'editor_operation_layer_not_found'],
