@@ -64,7 +64,12 @@ class MySqlTemplateVersionLockTest extends TestCase
                 ? file_get_contents("{$barrier}.failed")
                 : 'The competing publish failed.');
 
-            app(TemplateVersioning::class)->publish($template->fresh());
+            // The child published the template. A publish with no edit returns
+            // that version and writes no row, so edit the draft first. The new
+            // version number must then follow the number of the child.
+            $edited = $template->fresh();
+            $edited->forceFill(['layers' => json_encode([['key' => 'edited', 'properties' => []]])])->save();
+            app(TemplateVersioning::class)->publish($edited);
 
             $this->assertSame([1, 2], TemplateVersion::where('template_id', $template->id)
                 ->orderBy('version_number')

@@ -1,16 +1,16 @@
 BEGIN TRANSACTION;
-CREATE TABLE "migrations"(
+CREATE TABLE IF NOT EXISTS "migrations"(
   "id" integer primary key autoincrement not null,
   "migration" varchar not null,
   "batch" integer not null
 );
-CREATE TABLE "password_resets"(
+CREATE TABLE IF NOT EXISTS "password_resets"(
   "email" varchar not null,
   "token" varchar not null,
   "created_at" datetime
 );
 CREATE INDEX "password_resets_email_index" on "password_resets"("email");
-CREATE TABLE "oauth_auth_codes"(
+CREATE TABLE IF NOT EXISTS "oauth_auth_codes"(
   "id" varchar not null,
   "user_id" integer not null,
   "client_id" varchar not null,
@@ -19,11 +19,8 @@ CREATE TABLE "oauth_auth_codes"(
   "expires_at" datetime,
   primary key("id")
 );
-
-CREATE INDEX "oauth_auth_codes_user_id_index" on "oauth_auth_codes"(
-  "user_id"
-);
-CREATE TABLE "oauth_access_tokens"(
+CREATE INDEX "oauth_auth_codes_user_id_index" on "oauth_auth_codes"("user_id");
+CREATE TABLE IF NOT EXISTS "oauth_access_tokens"(
   "id" varchar not null,
   "user_id" integer,
   "client_id" varchar not null,
@@ -35,22 +32,20 @@ CREATE TABLE "oauth_access_tokens"(
   "expires_at" datetime,
   primary key("id")
 );
-
 CREATE INDEX "oauth_access_tokens_user_id_index" on "oauth_access_tokens"(
   "user_id"
 );
-CREATE TABLE "oauth_refresh_tokens"(
+CREATE TABLE IF NOT EXISTS "oauth_refresh_tokens"(
   "id" varchar not null,
   "access_token_id" varchar not null,
   "revoked" tinyint(1) not null,
   "expires_at" datetime,
   primary key("id")
 );
-
 CREATE INDEX "oauth_refresh_tokens_access_token_id_index" on "oauth_refresh_tokens"(
   "access_token_id"
 );
-CREATE TABLE "oauth_clients"(
+CREATE TABLE IF NOT EXISTS "oauth_clients"(
   "id" varchar not null,
   "owner_type" varchar,
   "owner_id" integer,
@@ -64,12 +59,11 @@ CREATE TABLE "oauth_clients"(
   "updated_at" datetime,
   primary key("id")
 );
-
 CREATE INDEX "oauth_clients_owner_type_owner_id_index" on "oauth_clients"(
   "owner_type",
   "owner_id"
 );
-CREATE TABLE "failed_jobs"(
+CREATE TABLE IF NOT EXISTS "failed_jobs"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "connection" text not null,
@@ -79,7 +73,7 @@ CREATE TABLE "failed_jobs"(
   "failed_at" datetime not null default CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX "failed_jobs_uuid_unique" on "failed_jobs"("uuid");
-CREATE TABLE "personal_access_tokens"(
+CREATE TABLE IF NOT EXISTS "personal_access_tokens"(
   "id" integer primary key autoincrement not null,
   "tokenable_type" varchar not null,
   "tokenable_id" integer not null,
@@ -98,7 +92,7 @@ CREATE INDEX "personal_access_tokens_tokenable_type_tokenable_id_index" on "pers
 CREATE UNIQUE INDEX "personal_access_tokens_token_unique" on "personal_access_tokens"(
   "token"
 );
-CREATE TABLE "media"(
+CREATE TABLE IF NOT EXISTS "media"(
   "id" integer primary key autoincrement not null,
   "model_type" varchar not null,
   "model_id" integer not null,
@@ -123,7 +117,7 @@ CREATE INDEX "media_model_type_model_id_index" on "media"(
   "model_id"
 );
 CREATE UNIQUE INDEX "media_uuid_unique" on "media"("uuid");
-CREATE TABLE "activity_log"(
+CREATE TABLE IF NOT EXISTS "activity_log"(
   "id" integer primary key autoincrement not null,
   "log_name" varchar,
   "description" text not null,
@@ -140,7 +134,7 @@ CREATE TABLE "activity_log"(
 CREATE INDEX "subject" on "activity_log"("subject_type", "subject_id");
 CREATE INDEX "causer" on "activity_log"("causer_type", "causer_id");
 CREATE INDEX "activity_log_log_name_index" on "activity_log"("log_name");
-CREATE TABLE "jobs"(
+CREATE TABLE IF NOT EXISTS "jobs"(
   "id" integer primary key autoincrement not null,
   "queue" varchar not null,
   "payload" text not null,
@@ -150,7 +144,7 @@ CREATE TABLE "jobs"(
   "created_at" integer not null
 );
 CREATE INDEX "jobs_queue_index" on "jobs"("queue");
-CREATE TABLE "template_template_collection"(
+CREATE TABLE IF NOT EXISTS "template_template_collection"(
   "template_id" integer not null,
   "template_collection_id" integer not null,
   "created_at" datetime,
@@ -160,7 +154,7 @@ CREATE INDEX "temp_temp_coll_id" on "template_template_collection"(
   "template_id",
   "template_collection_id"
 );
-CREATE TABLE "snap_imports"(
+CREATE TABLE IF NOT EXISTS "snap_imports"(
   "id" integer primary key autoincrement not null,
   "template_id" integer not null,
   "company_id" integer not null,
@@ -180,14 +174,12 @@ CREATE TABLE "snap_imports"(
   "title" varchar,
   "webhook_url" varchar
 );
-CREATE INDEX "snap_imports_template_id_index" on "snap_imports"(
-  "template_id"
-);
+CREATE INDEX "snap_imports_template_id_index" on "snap_imports"("template_id");
 CREATE INDEX "snap_imports_company_id_index" on "snap_imports"("company_id");
 CREATE INDEX "snap_imports_user_id_index" on "snap_imports"("user_id");
 CREATE INDEX "snap_imports_uuid_index" on "snap_imports"("uuid");
 CREATE INDEX "snap_imports_batch_id_index" on "snap_imports"("batch_id");
-CREATE TABLE "companies"(
+CREATE TABLE IF NOT EXISTS "companies"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "name" varchar not null,
@@ -197,7 +189,7 @@ CREATE TABLE "companies"(
   "webhook_secret" text
 );
 CREATE UNIQUE INDEX "companies_uuid_unique" on "companies"("uuid");
-CREATE TABLE "users"(
+CREATE TABLE IF NOT EXISTS "users"(
   "id" integer primary key autoincrement not null,
   "name" varchar,
   "email" varchar not null,
@@ -220,7 +212,7 @@ CREATE TABLE "users"(
   foreign key("company_id") references "companies"("id") on delete cascade
 );
 CREATE UNIQUE INDEX "users_email_unique" on "users"("email");
-CREATE TABLE "template_collections"(
+CREATE TABLE IF NOT EXISTS "template_collections"(
   "id" integer primary key autoincrement not null,
   "user_id" integer not null,
   "uuid" varchar not null,
@@ -233,7 +225,7 @@ CREATE TABLE "template_collections"(
 CREATE UNIQUE INDEX "template_collections_uuid_unique" on "template_collections"(
   "uuid"
 );
-CREATE TABLE "forms"(
+CREATE TABLE IF NOT EXISTS "forms"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "user_id" integer not null,
@@ -260,7 +252,7 @@ CREATE UNIQUE INDEX "forms_submit_signed_url_unique" on "forms"(
 CREATE INDEX "forms_type_index" on "forms"("type");
 CREATE INDEX "forms_user_id_index" on "forms"("user_id");
 CREATE UNIQUE INDEX "forms_uuid_unique" on "forms"("uuid");
-CREATE TABLE "company_invitations"(
+CREATE TABLE IF NOT EXISTS "company_invitations"(
   "id" integer primary key autoincrement not null,
   "company_id" integer not null,
   "invited_by" integer not null,
@@ -282,7 +274,7 @@ CREATE INDEX "company_invitations_company_id_email_index" on "company_invitation
 CREATE UNIQUE INDEX "company_invitations_token_unique" on "company_invitations"(
   "token"
 );
-CREATE TABLE "tags"(
+CREATE TABLE IF NOT EXISTS "tags"(
   "id" integer primary key autoincrement not null,
   "company_id" integer not null,
   "name" varchar not null,
@@ -295,7 +287,7 @@ CREATE UNIQUE INDEX "tags_company_id_slug_unique" on "tags"(
   "company_id",
   "slug"
 );
-CREATE TABLE "taggables"(
+CREATE TABLE IF NOT EXISTS "taggables"(
   "id" integer primary key autoincrement not null,
   "tag_id" integer not null,
   "taggable_type" varchar not null,
@@ -313,7 +305,7 @@ CREATE UNIQUE INDEX "taggables_unique" on "taggables"(
   "taggable_id",
   "taggable_type"
 );
-CREATE TABLE "api_keys"(
+CREATE TABLE IF NOT EXISTS "api_keys"(
   "id" integer primary key autoincrement not null,
   "user_id" integer not null,
   "token_id" integer not null,
@@ -325,7 +317,7 @@ CREATE TABLE "api_keys"(
   "company_id" integer,
   foreign key("company_id") references "companies"("id") on delete cascade
 );
-CREATE TABLE "screenshots"(
+CREATE TABLE IF NOT EXISTS "screenshots"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "user_id" integer not null,
@@ -339,7 +331,7 @@ CREATE TABLE "screenshots"(
 );
 CREATE INDEX "screenshots_user_id_index" on "screenshots"("user_id");
 CREATE INDEX "screenshots_uuid_index" on "screenshots"("uuid");
-CREATE TABLE "user_events"(
+CREATE TABLE IF NOT EXISTS "user_events"(
   "id" integer primary key autoincrement not null,
   "user_id" integer not null,
   "company_id" integer,
@@ -355,7 +347,7 @@ CREATE INDEX "user_events_company_id_name_index" on "user_events"(
 );
 CREATE INDEX "user_events_name_index" on "user_events"("name");
 CREATE INDEX "user_events_created_at_index" on "user_events"("created_at");
-CREATE TABLE "api_logs"(
+CREATE TABLE IF NOT EXISTS "api_logs"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "user_id" integer not null,
@@ -372,7 +364,7 @@ CREATE TABLE "api_logs"(
   "feature" varchar,
   "personal_access_token_id" integer
 );
-CREATE TABLE "fonts"(
+CREATE TABLE IF NOT EXISTS "fonts"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "company_id" integer not null,
@@ -386,7 +378,7 @@ CREATE TABLE "fonts"(
 );
 CREATE INDEX "fonts_company_id_index" on "fonts"("company_id");
 CREATE UNIQUE INDEX "fonts_uuid_unique" on "fonts"("uuid");
-CREATE TABLE "templates"(
+CREATE TABLE IF NOT EXISTS "templates"(
   "id" integer primary key autoincrement not null,
   "user_id" integer,
   "uuid" varchar not null,
@@ -407,7 +399,7 @@ CREATE TABLE "templates"(
   foreign key("published_version_id") references "template_versions"("id") on delete set null
 );
 CREATE INDEX "templates_size_index" on "templates"("size");
-CREATE TABLE "idempotency_keys"(
+CREATE TABLE IF NOT EXISTS "idempotency_keys"(
   "id" integer primary key autoincrement not null,
   "company_id" integer not null,
   "key" varchar not null,
@@ -425,7 +417,7 @@ CREATE UNIQUE INDEX "idempotency_keys_company_id_key_unique" on "idempotency_key
 CREATE INDEX "idempotency_keys_created_at_index" on "idempotency_keys"(
   "created_at"
 );
-CREATE TABLE "job_batches"(
+CREATE TABLE IF NOT EXISTS "job_batches"(
   "id" varchar not null,
   "name" varchar not null,
   "total_jobs" integer not null,
@@ -438,12 +430,11 @@ CREATE TABLE "job_batches"(
   "finished_at" integer,
   primary key("id")
 );
-
 CREATE UNIQUE INDEX "templates_company_id_uuid_unique" on "templates"(
   "company_id",
   "uuid"
 );
-CREATE TABLE "editor_assets"(
+CREATE TABLE IF NOT EXISTS "editor_assets"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "company_id" integer not null,
@@ -466,7 +457,7 @@ CREATE INDEX "editor_assets_company_id_created_at_id_index" on "editor_assets"(
   "id"
 );
 CREATE UNIQUE INDEX "editor_assets_uuid_unique" on "editor_assets"("uuid");
-CREATE TABLE "template_version_assets"(
+CREATE TABLE IF NOT EXISTS "template_version_assets"(
   "template_version_id" integer not null,
   "editor_asset_id" integer not null,
   "created_at" datetime,
@@ -475,11 +466,10 @@ CREATE TABLE "template_version_assets"(
   foreign key("editor_asset_id") references "editor_assets"("id") on delete restrict,
   primary key("template_version_id", "editor_asset_id")
 );
-
 CREATE INDEX "template_version_assets_editor_asset_id_index" on "template_version_assets"(
   "editor_asset_id"
 );
-CREATE TABLE "brand_tokens"(
+CREATE TABLE IF NOT EXISTS "brand_tokens"(
   "id" integer primary key autoincrement not null,
   "company_id" integer not null,
   "uuid" varchar not null,
@@ -504,7 +494,7 @@ CREATE INDEX "brand_tokens_company_id_kind_retired_at_index" on "brand_tokens"(
   "retired_at"
 );
 CREATE UNIQUE INDEX "brand_tokens_uuid_unique" on "brand_tokens"("uuid");
-CREATE TABLE "creative_packages"(
+CREATE TABLE IF NOT EXISTS "creative_packages"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "company_id" integer not null,
@@ -554,7 +544,7 @@ CREATE INDEX "creative_packages_replay_cleanup_index" on "creative_packages"(
 );
 CREATE INDEX "api_logs_url_index" on "api_logs"("url");
 CREATE INDEX "api_logs_uuid_index" on "api_logs"("uuid");
-CREATE TABLE "template_versions"(
+CREATE TABLE IF NOT EXISTS "template_versions"(
   "id" integer primary key autoincrement not null,
   "template_id" integer,
   "version_number" integer not null,
@@ -580,7 +570,7 @@ CREATE UNIQUE INDEX "template_versions_template_id_version_number_unique" on "te
   "template_id",
   "version_number"
 );
-CREATE TABLE "snaps"(
+CREATE TABLE IF NOT EXISTS "snaps"(
   "id" integer primary key autoincrement not null,
   "template_id" integer,
   "user_id" integer,
@@ -625,7 +615,7 @@ CREATE INDEX "creative_packages_reconciliation_index" on "creative_packages"(
   "id"
 );
 CREATE UNIQUE INDEX creative_packages_uuid_unique ON creative_packages(uuid);
-CREATE TABLE "creative_package_items"(
+CREATE TABLE IF NOT EXISTS "creative_package_items"(
   "id" integer primary key autoincrement not null,
   "uuid" varchar not null,
   "company_id" integer not null,
@@ -719,14 +709,13 @@ CREATE INDEX "creative_package_items_snap_index" on "creative_package_items"(
 CREATE INDEX "creative_package_items_source_version_index" on "creative_package_items"(
   "source_template_version_id"
 );
-CREATE TABLE "instance_settings"(
+CREATE TABLE IF NOT EXISTS "instance_settings"(
   "key" varchar not null,
   "value" text,
   "created_at" datetime,
   "updated_at" datetime,
   primary key("key")
 );
-
 
 INSERT INTO migrations VALUES(1,'2014_10_12_000000_create_users_table',1);
 INSERT INTO migrations VALUES(2,'2014_10_12_100000_create_password_resets_table',1);

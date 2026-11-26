@@ -56,7 +56,10 @@ trait SeedsProductionShapedRows
 
     private static float $seedSeconds = 0.0;
 
-    /** memory_get_usage() right after the seed, for the bounded-memory assertion and the evidence document. */
+    /**
+     * The growth of memory_get_usage() over the seed, for the bounded-memory
+     * assertion. The absolute value depends on the tests that ran before.
+     */
     private static int $seedMemoryBytes = 0;
 
     /** Seed one time per class. Returns the companies, hot company first. */
@@ -67,6 +70,7 @@ trait SeedsProductionShapedRows
         }
         self::deleteProductionShape(DB::connection()->getPdo());
         $started = microtime(true);
+        $memoryBefore = memory_get_usage();
         $now = CarbonImmutable::now();
 
         $companies = [];
@@ -81,7 +85,7 @@ trait SeedsProductionShapedRows
         });
 
         self::$seedSeconds = microtime(true) - $started;
-        self::$seedMemoryBytes = memory_get_usage();
+        self::$seedMemoryBytes = memory_get_usage() - $memoryBefore;
         self::$seedPdo = DB::connection()->getPdo();
         self::$seededBy = static::class;
 

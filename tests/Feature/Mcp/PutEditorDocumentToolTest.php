@@ -66,7 +66,9 @@ class PutEditorDocumentToolTest extends TestCase
         $this->assertSame('editor_document_conflict', $error['code']);
         $this->assertStringContainsString('get-editor-document', $error['fix']);
         $this->assertSame(3, $error['details']['current_revision']);
-        $this->assertSame($document, $error['details']['current_document']);
+        // MySQL returns a JSON column with its own key order, so compare with the stored document.
+        $this->assertSame($template->fresh()->editor_document, $error['details']['current_document']);
+        $this->assertEquals($document, $error['details']['current_document']);
 
         $after = DB::table('templates')->where('id', $template->id)->first();
 
