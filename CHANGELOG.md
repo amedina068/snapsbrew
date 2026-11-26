@@ -8,6 +8,10 @@ This file lists the changes to the code for each release. The release notes for 
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-25
+
+The first public release.
+
 ### Added
 
 - The Docker image runs all of Snapsbrew in one container with no settings: `docker run -d -p 8080:8080 -v snapsbrew:/data ghcr.io/amedina068/snapsbrew`. s6 runs the web server, `queue:work`, the scheduler and a headless Chromium. The `/data` volume holds the SQLite database, the app key (made on the first start), the uploads and the rendered images. The last log line of the boot is the URL to open.
@@ -36,6 +40,21 @@ This file lists the changes to the code for each release. The release notes for 
 - `/setup` without a correct token shows how to get the setup URL (`docker logs snapsbrew` or `php artisan snapsbrew:setup-url`).
 - `install.sh` installs Snapsbrew on a server with Docker in one command. `INSTALL.md` gives the same steps to an AI agent.
 - Each user has a role in the company: `owner` or `member`. **Account > Users** and **Admin > Users** show the role. `snapsbrew:user:list` and the `list-users` admin tool return it as `company_role`. An owner can make a member an owner, or make another owner a member. The last owner of a company stays an owner.
+- Template editor in the browser with text, image, shape, SVG pattern, QR code and barcode layers, groups, custom fonts and brand tokens. Each publish freezes a template version.
+- REST API to render one snap, a collection or a batch of up to 100 items, in sync or async mode, with webhooks and idempotency keys. The API docs at `/documentation` come from one spec, with an OpenAPI schema and a Postman collection.
+- Signed image URLs for `og:image` tags. The first request renders the image and later requests read the cache.
+- Embedded forms that render a template from the values that a person types.
+- Spreadsheet imports: one snap for each row of a CSV or XLSX file.
+- Screenshots of web pages.
+- MCP server for AI agents, with API token or OAuth 2.0 access, design guidance tools and creative packages.
+- Usage log of each request and each render.
+- Teams with invitations and two-factor authentication.
+- Self-hosting with Docker Compose: web, Horizon, scheduler, MySQL, Redis and Browserless.
+- A Docker image on GHCR for each release, for `linux/amd64` and `linux/arm64`, and `docker-compose.image.yml` to run it without a build.
+- First-run setup page at `/setup` and the `snapsbrew:install` command to create the owner of the instance.
+- Six starter templates: a link preview, a quote card, a certificate, an announcement, a blog header and a YouTube thumbnail. The setup page and `snapsbrew:install` offer them, and `snapsbrew:starter-templates` adds them to any account.
+- Invite-only and open registration modes, an owner role, user deactivation and account recovery commands.
+- Optional Rollbar error reports and S3-compatible media storage.
 
 ### Changed
 
@@ -64,6 +83,10 @@ This file lists the changes to the code for each release. The release notes for 
 - A signed URL accepts the key of any active user in the company of the template, not only the keys of the template owner. The usage log and the snap name the user whose key signed the URL.
 - `PATCH /v1/templates/{templateIdentifier}`, the MCP tool `edit-template` and the template settings form render a new preview image only when `layers`, `groups`, `width` or `height` changes, or when the template has no preview. A repeat of the same request, or a change to the title only, makes no render and keeps the preview URL. Before, each API and MCP call rendered the preview again.
 
+### Removed
+
+- The app loads no Plausible analytics script. The app does not read `PLAUSIBLE_DOMAIN` and `PLAUSIBLE_SCRIPT_URL`, so you can remove them from `.env`.
+
 ### Fixed
 
 - A template update that fails to render its preview saves nothing. Before, `PATCH /v1/templates/{templateIdentifier}` and the MCP tool `edit-template` saved the template and then answered `500`, and the template kept the old preview. The render now runs before the save, so a retry of the same request renders again.
@@ -85,10 +108,6 @@ This file lists the changes to the code for each release. The release notes for 
 - The onboarding wizard shows an error next to an invite email that is not valid. Before, **Finish** did nothing and showed no message. A step that fails with a rate limit or a server error shows a message. The invite fields have labels, the category cards say if they are selected, and a screen reader hears the step number.
 - The template edit page shows the reason when a save fails, and an unknown template returns 404 instead of a server error. The starting template gallery fits a phone screen and says when no template has the chosen size. An empty filtered template list offers **Clear the filters**. The template page says **Duplicate template**, the same as the template actions menu. The spreadsheet uploader no longer puts the file field inside the drop zone button.
 
-### Removed
-
-- The app loads no Plausible analytics script. The app does not read `PLAUSIBLE_DOMAIN` and `PLAUSIBLE_SCRIPT_URL`, so you can remove them from `.env`.
-
 ### Security
 
 - The free tools render only the template that the operator sets for each tool, change only the fixed fields of the tool, take an image of 2 MB or less and allow 5 requests each minute for each IP.
@@ -106,28 +125,6 @@ This file lists the changes to the code for each release. The release notes for 
 - A webhook checks the address of its receiver again when the job sends it, and every attempt connects to that checked address. If the host now resolves to an internal or reserved address, the app sends nothing and `last_error` holds `webhook_address_refused`. The editor image download refuses the same non-global ranges as `SafeUrl`.
 - The Fortify routes that had no limit now have one. A reset link request allows 5 each minute for each IP and 5 each hour for each email. A password reset allows 5 each minute for each IP. A sign-up allows 5 each minute and 20 each day for each IP. The password confirmation and the password change allow 5 each minute for each user. A request over a limit gets 429.
 - A failed Browserless render no longer writes `BROWSERLESS_TOKEN` to the log. The demo `DatabaseSeeder`, which creates users with a public password, refuses to run when `APP_ENV=production`, also with `--force`.
-
-## [0.1.0] - Unreleased
-
-The first public release.
-
-### Added
-
-- Template editor in the browser with text, image, shape, SVG pattern, QR code and barcode layers, groups, custom fonts and brand tokens. Each publish freezes a template version.
-- REST API to render one snap, a collection or a batch of up to 100 items, in sync or async mode, with webhooks and idempotency keys. The API docs at `/documentation` come from one spec, with an OpenAPI schema and a Postman collection.
-- Signed image URLs for `og:image` tags. The first request renders the image and later requests read the cache.
-- Embedded forms that render a template from the values that a person types.
-- Spreadsheet imports: one snap for each row of a CSV or XLSX file.
-- Screenshots of web pages.
-- MCP server for AI agents, with API token or OAuth 2.0 access, design guidance tools and creative packages.
-- Usage log of each request and each render.
-- Teams with invitations and two-factor authentication.
-- Self-hosting with Docker Compose: web, Horizon, scheduler, MySQL, Redis and Browserless.
-- A Docker image on GHCR for each release, for `linux/amd64` and `linux/arm64`, and `docker-compose.image.yml` to run it without a build.
-- First-run setup page at `/setup` and the `snapsbrew:install` command to create the owner of the instance.
-- Six starter templates: a link preview, a quote card, a certificate, an announcement, a blog header and a YouTube thumbnail. The setup page and `snapsbrew:install` offer them, and `snapsbrew:starter-templates` adds them to any account.
-- Invite-only and open registration modes, an owner role, user deactivation and account recovery commands.
-- Optional Rollbar error reports and S3-compatible media storage.
 
 [Unreleased]: https://github.com/amedina068/snapsbrew/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/amedina068/snapsbrew/releases/tag/v0.1.0
