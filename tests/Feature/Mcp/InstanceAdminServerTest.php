@@ -71,7 +71,7 @@ class InstanceAdminServerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->owner = User::factory()->create(['email' => 'owner@example.com', 'is_owner' => true]);
+        $this->owner = User::factory()->create(['name' => 'Instance Owner', 'email' => 'owner@example.com', 'is_owner' => true]);
     }
 
     /**
