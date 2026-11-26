@@ -22,6 +22,7 @@ This file lists the changes to the code for each release. The release notes for 
 
 - `snapsbrew:doctor --fix --json` keeps its output one JSON object when it creates the `public/storage` link or the Passport keys. Before, a caller that ran the command in the same process with `Artisan::call()` read the line of `storage:link` instead of the JSON object. The repair now runs `storage:link` and `passport:keys` with no output.
 - A new account gets a copy of the `[Onboarding] Showcase` template. This copy now gets a published version and a queued `GenerateTemplatePreview` job, as a starter template does. Before, the copy had no published version and no preview image, and the template list showed "The preview is on its way." for it with no end.
+- The **Font family** list of the template editor shows the font of the selected text layer. Before, it showed `ABeeZee`, the first font of the list, for each text layer. `SbEditorSelect` compared the `value` key of each option, but the font options use the key `family`.
 - In the Docker image, Chromium keeps the fontconfig cache in `/var/www/.cache/fontconfig`. The build fills this folder with `fc-cache`. The check `fonts_cache` of `snapsbrew:doctor` reads the same folder and now reports `ok`.
 
 ## [0.1.0] - 2026-11-25
