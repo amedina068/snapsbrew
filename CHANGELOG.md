@@ -20,6 +20,7 @@ This file lists the changes to the code for each release. The release notes for 
 - A company that has active users always keeps an active owner. **Admin > Users** refuses to deactivate the last active owner of such a company. **Account > Users** refuses to make the last active owner a member. A deactivated owner does not count as an owner for these rules.
 - The `company_role` migration skips a deactivated founder. It makes the active user with the lowest id the owner. A delete of the last owner also makes the oldest active user the owner.
 
+- `snapsbrew:doctor --fix --json` keeps its output one JSON object when it creates the `public/storage` link or the Passport keys. Before, a caller that ran the command in the same process with `Artisan::call()` read the line of `storage:link` instead of the JSON object. The repair now runs `storage:link` and `passport:keys` with no output.
 - In the Docker image, Chromium keeps the fontconfig cache in `/var/www/.cache/fontconfig`. The build fills this folder with `fc-cache`. The check `fonts_cache` of `snapsbrew:doctor` reads the same folder and now reports `ok`.
 
 ## [0.1.0] - 2026-11-25

@@ -170,6 +170,36 @@ class StatusAndDoctorCommandTest extends TestCase
         }
     }
 
+    public function test_doctor_fix_json_creates_the_missing_storage_link_and_stdout_stays_one_json_object()
+    {
+        $link = public_path('storage');
+        $target = is_link($link) ? readlink($link) : null;
+        $this->assertTrue($target !== null || ! file_exists($link), 'public/storage must be a link or must not exist.');
+
+        if ($target !== null) {
+            unlink($link);
+        }
+
+        try {
+            // runJson() reads Artisan::output() and fails unless it holds one
+            // JSON object and nothing else.
+            [, $json, $raw] = $this->runJson('snapsbrew:doctor', ['--fix' => true]);
+            $check = collect($json['data']['checks'])->firstWhere('id', 'storage_link');
+
+            $this->assertSame('ok', $check['status']);
+            $this->assertTrue($check['fixed']);
+            $this->assertTrue(is_link($link));
+            $this->assertStringNotContainsString('has been connected', $raw);
+        } finally {
+            if (is_link($link)) {
+                unlink($link);
+            }
+            if ($target !== null) {
+                symlink($target, $link);
+            }
+        }
+    }
+
     public function test_doctor_never_runs_migrations_or_other_unsafe_fixes()
     {
         $this->assertSame(['storage_link', 'passport_keys', 'fonts_cache'], InstanceDoctor::SAFE_FIXES);
