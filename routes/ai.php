@@ -82,6 +82,9 @@ Mcp::oauthRoutes();
 // The package registers `POST /oauth/register` with no middleware. This route
 // replaces it with the same controller, a throttle for each IP, and a limit on
 // the size of a registration. `OAuthRegistrationLimitsTest` makes sure that
-// only one route answers.
+// only one route answers. The route keeps the package name
+// `mcp.oauth.register`, because the discovery document names the
+// `registration_endpoint` only when a route has this name.
 Route::post('oauth/register', OAuthRegisterController::class)
-    ->middleware(['throttle:oauth-register', LimitOAuthClientRegistration::class]);
+    ->middleware(['throttle:oauth-register', LimitOAuthClientRegistration::class])
+    ->name('mcp.oauth.register');

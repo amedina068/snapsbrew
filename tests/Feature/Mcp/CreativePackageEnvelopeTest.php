@@ -88,13 +88,17 @@ class CreativePackageEnvelopeTest extends TestCase
             ->assertExactJson($this->invalidResponse());
     }
 
-    public function test_null_id_keeps_notification_behavior(): void
+    public function test_null_id_reaches_the_native_transport(): void
     {
         $payload = $this->targetPayload();
         $payload['id'] = null;
 
+        // The envelope check lets a null id through. The native transport
+        // rejects it, because an MCP request id must be a string or a number.
         $this->postRaw(json_encode($payload, JSON_THROW_ON_ERROR), $this->token())
-            ->assertStatus(202);
+            ->assertStatus(400)
+            ->assertJsonPath('error.code', -32600)
+            ->assertJsonPath('error.message', 'Invalid Request: The [id] member must be a string, number.');
     }
 
     public function test_rejection_does_not_leak_internal_validation_details(): void
@@ -164,9 +168,9 @@ class CreativePackageEnvelopeTest extends TestCase
         $body = json_encode([$this->targetPayload()], JSON_THROW_ON_ERROR);
 
         $this->postRaw($body, $this->token())
-            ->assertOk()
+            ->assertStatus(400)
             ->assertJsonPath('error.code', -32600)
-            ->assertJsonPath('error.message', 'Invalid Request: Invalid JSON-RPC version. Must be "2.0".');
+            ->assertJsonPath('error.message', 'Invalid Request: The request must be a JSON object.');
     }
 
     public function test_authentication_runs_before_target_validation(): void

@@ -64,7 +64,7 @@ class CreativePackageRequestShapesTest extends TestCase
         $actor = $this->member();
         $body = json_encode($this->envelope($this->request('cut', [$this->source($actor, 1)])), JSON_THROW_ON_ERROR);
 
-        $this->send(substr($body, 0, -10), $actor)->assertOk()->assertJsonPath('error.code', -32700);
+        $this->send(substr($body, 0, -10), $actor)->assertStatus(400)->assertJsonPath('error.code', -32700);
         $this->assertSame(0, CreativePackage::count());
     }
 
