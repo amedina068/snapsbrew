@@ -50,7 +50,7 @@
         @keydown.space.prevent="triggerFilePicker"
       >
         <span class="grid size-12 shrink-0 place-items-center rounded-full bg-white text-rose-600 ring-1 ring-gray-200">
-          <CloudUploadIcon class="size-6" aria-hidden="true" />
+          <CloudArrowUpIcon class="size-6" aria-hidden="true" />
         </span>
         <span>
           <span class="block text-sm font-semibold text-gray-900">Drop your file here, or click to browse</span>
@@ -85,7 +85,7 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { CloudUploadIcon } from '@heroicons/vue/outline'
+import { CloudArrowUpIcon } from '@heroicons/vue/24/outline'
 import UiButton from './ui/UiButton.vue'
 
 const props = defineProps({

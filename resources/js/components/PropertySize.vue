@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-  import { LockClosedIcon, LockOpenIcon } from '@heroicons/vue/outline'
+  import { LockClosedIcon, LockOpenIcon } from '@heroicons/vue/24/outline'
   import { computed } from 'vue'
   import { useStore } from 'vuex'
   import AspectRatioSelect from './AspectRatioSelect.vue'

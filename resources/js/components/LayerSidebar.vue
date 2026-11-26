@@ -29,7 +29,7 @@
             title="Undo"
             class="flex size-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
           >
-            <ReplyIcon class="size-4" aria-hidden="true" />
+            <ArrowUturnLeftIcon class="size-4" aria-hidden="true" />
           </button>
           <button
             :disabled="! hasRedo"
@@ -38,7 +38,7 @@
             title="Redo"
             class="flex size-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
           >
-            <ReplyIcon class="size-4 -scale-x-100" aria-hidden="true" />
+            <ArrowUturnLeftIcon class="size-4 -scale-x-100" aria-hidden="true" />
           </button>
         </div>
       </header>
@@ -53,7 +53,7 @@
     <div v-if="! layer" class="px-4 py-8">
       <div class="flex items-start gap-3 rounded-xl border border-slate-200 border-l-4 border-l-indigo-300 bg-white p-4">
         <span class="grid size-9 shrink-0 place-items-center rounded-full bg-indigo-50 text-indigo-600">
-          <CursorClickIcon class="size-5" aria-hidden="true" />
+          <CursorArrowRaysIcon class="size-5" aria-hidden="true" />
         </span>
         <div>
           <p class="text-sm font-semibold text-slate-900">No layer selected</p>
@@ -67,8 +67,8 @@
 </template>
 
 <script setup>
-  import { CursorClickIcon, LockOpenIcon, ReplyIcon } from '@heroicons/vue/outline'
-  import { LockClosedIcon } from '@heroicons/vue/solid'
+  import { CursorArrowRaysIcon, LockOpenIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline'
+  import { LockClosedIcon } from '@heroicons/vue/20/solid'
   import { computed } from 'vue'
   import { useStore } from 'vuex'
   import LayerPropertiesSettings from './LayerPropertiesSettings'

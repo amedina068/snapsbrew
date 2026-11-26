@@ -27,8 +27,8 @@
 
 <script setup>
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
-import { ChevronDownIcon, DocumentTextIcon, PhotographIcon, ViewGridIcon, QrcodeIcon, MenuAlt4Icon } from '@heroicons/vue/solid'
-import { BeakerIcon } from '@heroicons/vue/outline'
+import { ChevronDownIcon, DocumentTextIcon, PhotoIcon, Squares2X2Icon, QrCodeIcon, Bars2Icon } from '@heroicons/vue/20/solid'
+import { BeakerIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
 import { useStore } from 'vuex'
 
@@ -42,13 +42,13 @@ const layerOptions = [
     value: 'empty',
     title: 'Empty layer',
     description: 'Start with a blank layer configured for solid colors.',
-    icon: ViewGridIcon
+    icon: Squares2X2Icon
   },
   {
     value: 'image',
     title: 'Image layer',
     description: 'Place an image placeholder with default sizing.',
-    icon: PhotographIcon
+    icon: PhotoIcon
   },
   {
     value: 'text',
@@ -60,13 +60,13 @@ const layerOptions = [
     value: 'qr_code',
     title: 'QR code layer',
     description: 'Reserve space for QR data with placeholder styling.',
-    icon: QrcodeIcon
+    icon: QrCodeIcon
   },
   {
     value: 'barcode',
     title: 'Barcode layer',
     description: 'Add a Code128, EAN-13 or UPC-A barcode.',
-    icon: MenuAlt4Icon
+    icon: Bars2Icon
   },
   {
     value: 'svg',

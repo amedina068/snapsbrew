@@ -89,7 +89,7 @@
         <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <h3 class="text-sm font-semibold text-gray-800">Preview — v{{ previewVersionNumber }}</h3>
           <button type="button" class="text-gray-400 hover:text-gray-700" aria-label="Close preview" @click="closePreview">
-            <XIcon class="h-5 w-5" aria-hidden="true" />
+            <XMarkIcon class="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         <div class="flex items-center justify-center overflow-auto bg-gray-100 p-4">
@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-  import { EyeIcon, XIcon } from '@heroicons/vue/outline'
+  import { EyeIcon, XMarkIcon } from '@heroicons/vue/24/outline'
   import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { useStore } from 'vuex'
 

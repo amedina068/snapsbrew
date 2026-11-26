@@ -12,11 +12,11 @@
         : 'border-transparent text-slate-600 hover:bg-slate-50'"
     >
       <span class="layer-drag-handle cursor-grab text-slate-300 hover:text-slate-400 active:cursor-grabbing" :class="{ 'text-indigo-300 hover:text-indigo-400': selected }">
-        <MenuIcon class="w-4 h-4" aria-hidden="true" />
+        <Bars3Icon class="w-4 h-4" aria-hidden="true" />
       </span>
       <button @click.stop="toggleVisible" :title="layer.visible ? 'Hide layer' : 'Show layer'" class="shrink-0 rounded-sm p-0.5 transition-colors" :class="selected ? 'text-indigo-500 hover:text-indigo-700' : 'text-slate-400 hover:text-slate-600'">
         <EyeIcon class="h-4 w-4" v-show="layer.visible" aria-hidden="true" />
-        <EyeOffIcon class="h-4 w-4" v-show="! layer.visible" aria-hidden="true" />
+        <EyeSlashIcon class="h-4 w-4" v-show="! layer.visible" aria-hidden="true" />
       </button>
       <span
         class="min-w-0 flex-1 truncate px-1.5 py-1 text-sm"
@@ -29,7 +29,7 @@
           <CheckIcon class="h-4 w-4" aria-hidden="true" />
         </button>
         <button @click.prevent.stop="cancelDelete" title="Cancel" class="rounded-sm p-1 text-slate-400 hover:bg-white hover:text-slate-600">
-          <XIcon class="h-4 w-4" aria-hidden="true" />
+          <XMarkIcon class="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -39,7 +39,7 @@
           <LockOpenIcon class="h-4 w-4" v-show="! locked" aria-hidden="true" />
         </button>
         <button @click.prevent.stop="cloneLayer" title="Duplicate layer" class="rounded-sm p-1 text-slate-400 hover:bg-white hover:text-slate-600">
-          <DuplicateIcon class="h-4 w-4" aria-hidden="true" />
+          <DocumentDuplicateIcon class="h-4 w-4" aria-hidden="true" />
         </button>
         <button @click.prevent.stop="askDelete" title="Delete layer" class="rounded-sm p-1 text-slate-400 hover:bg-white hover:text-red-500">
           <TrashIcon class="h-4 w-4" aria-hidden="true" />
@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-  import { CheckIcon, DuplicateIcon, EyeIcon, EyeOffIcon, LockClosedIcon, LockOpenIcon, MenuIcon, TrashIcon, XIcon } from '@heroicons/vue/outline'
+  import { CheckIcon, DocumentDuplicateIcon, EyeIcon, EyeSlashIcon, LockClosedIcon, LockOpenIcon, Bars3Icon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline'
   import { toRefs, computed, ref } from 'vue'
   import { useStore } from 'vuex'
 

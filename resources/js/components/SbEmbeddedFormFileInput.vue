@@ -2,7 +2,7 @@
   <div class="flex items-center gap-4 rounded-xl border border-gray-200 bg-slate-50 p-3">
     <span class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-white ring-1 ring-gray-200">
       <img v-if="image" :src="image" alt="Preview of the chosen image" class="size-full object-cover">
-      <PhotographIcon v-else class="size-7 text-gray-400" aria-hidden="true" />
+      <PhotoIcon v-else class="size-7 text-gray-400" aria-hidden="true" />
     </span>
     <div class="min-w-0">
       <label
@@ -19,7 +19,7 @@
 
 <script setup>
   import { ref } from 'vue'
-  import { PhotographIcon } from '@heroicons/vue/outline'
+  import { PhotoIcon } from '@heroicons/vue/24/outline'
 
   const props = defineProps({
     id: {

@@ -27,7 +27,7 @@
 </template>
 
 <script setup>
-  import { PlusIcon } from '@heroicons/vue/outline'
+  import { PlusIcon } from '@heroicons/vue/24/outline'
 import { computed } from 'vue'
 import { useStore } from 'vuex'
 import LayersSettings from './LayersSettings.vue'

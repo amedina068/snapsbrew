@@ -27,7 +27,7 @@
 
 <script>
 import { onMounted, ref, watch } from 'vue'
-import { PlusIcon } from '@heroicons/vue/outline'
+import { PlusIcon } from '@heroicons/vue/24/outline'
 import UiModal from './ui/UiModal.vue'
 
 export default {

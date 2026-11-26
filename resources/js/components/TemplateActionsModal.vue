@@ -11,7 +11,7 @@
           <input type="hidden" name="_token" :value="csrfToken">
           <input type="hidden" name="template_id" :value="template.id">
           <button type="submit" :class="actionClass">
-            <span :class="iconClass"><DuplicateIcon class="size-5" aria-hidden="true" /></span>
+            <span :class="iconClass"><DocumentDuplicateIcon class="size-5" aria-hidden="true" /></span>
             <span>
               <span class="block text-sm font-semibold text-gray-900">Duplicate template</span>
               <span class="block text-xs text-gray-500">Create an editable copy with the same content and tags.</span>
@@ -73,7 +73,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { DuplicateIcon, PencilIcon, TagIcon } from '@heroicons/vue/outline'
+import { DocumentDuplicateIcon, PencilIcon, TagIcon } from '@heroicons/vue/24/outline'
 import TagPicker from './TagPicker'
 import UiButton from './ui/UiButton.vue'
 import UiModal from './ui/UiModal.vue'

@@ -75,7 +75,7 @@
 </template>
 
 <script setup>
-  import { TrashIcon } from '@heroicons/vue/outline'
+  import { TrashIcon } from '@heroicons/vue/24/outline'
   import { computed } from 'vue'
   import { useStore } from 'vuex'
   import ScColorPicker  from './ScColorPicker.vue'
