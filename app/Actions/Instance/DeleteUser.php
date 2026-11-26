@@ -42,7 +42,8 @@ class DeleteUser
 
     /**
      * A company always has an owner. When the deleted user was the last
-     * owner, the user who joined first becomes the owner.
+     * owner, the active user who joined first becomes the owner. If no user
+     * is active, the user who joined first becomes the owner.
      */
     private function keepAnOwner(Company $company): void
     {
@@ -50,7 +51,10 @@ class DeleteUser
             return;
         }
 
-        $company->users()->orderBy('id')->first()
+        $company->users()
+            ->orderByRaw('CASE WHEN deactivated_at IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('id')
+            ->first()
             ?->forceFill(['company_role' => User::COMPANY_ROLE_OWNER])
             ->save();
     }

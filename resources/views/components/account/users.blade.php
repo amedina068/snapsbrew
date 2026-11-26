@@ -54,7 +54,7 @@
                 <input type="hidden" name="role" value="owner">
                 <x-ui.button size="sm" variant="ghost" aria-label="Make {{ $member->email }} an owner">Make owner</x-ui.button>
               </form>
-            @elseif ($ownerCount > 1)
+            @elseif ($canBecomeMember($member))
               <form method="POST" action="/account/users/{{ $member->id }}/role"
                     onsubmit="return confirm(@js("Make {$member->email} a member? A member cannot change the company."))">
                 @method('PATCH')
@@ -63,7 +63,7 @@
                 <x-ui.button size="sm" variant="ghost" aria-label="Make {{ $member->email }} a member">Make member</x-ui.button>
               </form>
             @else
-              <span class="text-xs text-gray-500">The last owner stays an owner.</span>
+              <span class="text-xs text-gray-500">The last active owner stays an owner.</span>
             @endif
           </x-ui.td>
         @endif

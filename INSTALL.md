@@ -178,4 +178,5 @@ Give the human these items:
 | No HTTPS certificate | Make sure that ports 80 and 443 are open in the firewall. Caddy needs both. |
 | The setup URL is lost | Run `docker exec snapsbrew php artisan snapsbrew:setup-url --json`. |
 | A user cannot log in | Run `docker exec snapsbrew php artisan snapsbrew:user:password <email> --generate --json`. |
+| A company has no active owner | Run `docker exec snapsbrew php artisan snapsbrew:user:role <email> owner --json`. The doctor check `company_owners` gives the email. |
 | A render fails | Run `snapsbrew:doctor --json --no-interaction`. Report the render check. |

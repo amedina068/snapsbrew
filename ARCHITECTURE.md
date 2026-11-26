@@ -322,7 +322,9 @@ Both drivers send the HTML through `App\Rendering\RenderDocument` first. It repl
 
 `App\Actions\Instance\CreateInstanceOwner` creates the owner for two callers: the `snapsbrew:install` command and the web setup page at `/setup`. The setup page is open only while the `users` table is empty. It needs a token that `App\Support\InstanceSetup` derives from `APP_KEY` with HMAC. While no user exists, `GET /`, `/login` and `/register` redirect to `/setup`.
 
-`App\Actions\Instance\DeleteUser` deletes a user and the personal data of the user for the admin area. If the user was the last owner of a company with other users, the user who joined first becomes the owner.
+`App\Actions\Instance\DeleteUser` deletes a user and the personal data of the user for the admin area. If the user was the last owner of a company with other users, the active user who joined first becomes the owner.
+
+`App\Support\CompanyOwners` holds the rule that keeps an active owner in each company. An active owner has the role `owner` and no `deactivated_at`. `CompanyUserRoleController`, `snapsbrew:user:role` and the deactivation in **Admin > Users** call it. It locks the owner rows of the company, so two requests cannot remove the last two active owners at the same time. If a change breaks the rule, it throws `LastActiveOwnerException`. The doctor check `company_owners` reads the same class.
 
 `StarterTemplateInstaller` adds the starter templates of `App\Support\StarterTemplates` to the company of a user. It writes each template through `TemplateDocumentService`, publishes it with `TemplateVersioning` and renders its preview. It skips a title that the company already has. Three callers use it: the `snapsbrew:starter-templates` command, the `snapsbrew:install` command and the `InstallStarterTemplates` job.
 
@@ -447,7 +449,7 @@ The rate limiters are in `RouteServiceProvider`: `api`, `preview`, `editor-docum
 - **Sanctum** gives API tokens with abilities: `api_requests` for the REST API and the MCP server, and `signed_url` for signed-URL keys.
 - **Passport** gives OAuth 2.0 access tokens to MCP clients. Clients register themselves at `POST /oauth/register`. `MCP_REDIRECT_DOMAINS` limits where an authorization code can go.
 - **Roles**: `admin` and `customer` can both create content (`User::actsAsCustomer()`). Only an owner (`is_owner`) can open the admin area and Horizon.
-- **Company roles**: `users.company_role` is `owner` or `member`. All users of a company share its content: templates, snaps, collections, forms, tags and media. Only an owner can change the company itself: rename it, rotate the webhook secret, create or cancel invitations, delete fonts and change roles. A company always keeps at least one owner. `CompanyPolicy` holds these rules. The instance owner (`is_owner`) and a company owner are two different roles.
+- **Company roles**: `users.company_role` is `owner` or `member`. All users of a company share its content: templates, snaps, collections, forms, tags and media. Only an owner can change the company itself: rename it, rotate the webhook secret, create or cancel invitations, delete fonts and change roles. A company with active users always keeps at least one active owner. `CompanyPolicy` holds the access rules, and `CompanyOwners` holds the owner rule. The instance owner (`is_owner`) and a company owner are two different roles.
 - **Company scoping**: queries filter by the `company_id` of the user. A record of another company answers 404.
 - **Policies**: `TemplatePolicy`, `FontPolicy` and `CompanyPolicy` in `app/Policies` check the company of the record and the role of the user.
 

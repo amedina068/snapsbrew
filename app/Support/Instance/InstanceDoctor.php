@@ -4,6 +4,7 @@ namespace App\Support\Instance;
 
 use App\Contracts\SnapRenderer;
 use App\Models\User;
+use App\Support\CompanyOwners;
 use Closure;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
@@ -31,6 +32,9 @@ class InstanceDoctor
 
     /** The checks that `--fix` can repair. */
     public const SAFE_FIXES = ['storage_link', 'passport_keys', 'fonts_cache'];
+
+    /** The message and the fix name at most this many companies. */
+    private const COMPANIES_SHOWN = 10;
 
     private const TEST_RENDER_HTML = '<!DOCTYPE html><html><body style="margin:0;background:#ff6a00"></body></html>';
 
@@ -97,6 +101,7 @@ class InstanceDoctor
             'cache_store' => fn () => $this->cacheStore(),
             'mail' => fn () => $this->mail(),
             'owner' => fn () => $this->owner(),
+            'company_owners' => fn () => $this->companyOwners(),
         ];
     }
 
@@ -304,6 +309,41 @@ class InstanceDoctor
         return User::query()->where('is_owner', true)->exists()
             ? $this->ok('owner', 'An owner account exists.')
             : $this->result('owner', self::WARN, 'This instance has no owner yet.', 'Run php artisan snapsbrew:install --name="..." --email="..." --json.');
+    }
+
+    /**
+     * A company with active users and no active owner works, but nobody in it
+     * can change the roles or manage the members. The `companies` list has
+     * each company and the active user who joined first.
+     */
+    private function companyOwners(): array
+    {
+        if (! $this->status->database()['connected']) {
+            return $this->result('company_owners', self::FAIL, 'The company owners cannot be read, because the database does not answer.', 'Correct the database check first.');
+        }
+
+        try {
+            $companies = CompanyOwners::companiesWithoutActiveOwner();
+        } catch (Throwable) {
+            return $this->result('company_owners', self::WARN, 'The company owners cannot be read. The users table has no company roles yet.', 'Run php artisan migrate --force. Then run php artisan snapsbrew:doctor again.');
+        }
+
+        if ($companies === []) {
+            return $this->ok('company_owners', 'Each company with an active user has an active owner.');
+        }
+
+        $shown = array_slice($companies, 0, self::COMPANIES_SHOWN);
+        $more = count($companies) - count($shown);
+        $names = implode(', ', array_map(fn (array $company) => "{$company['name']} (id {$company['id']})", $shown));
+        $commands = implode(' ', array_map(fn (array $company) => "Run php artisan snapsbrew:user:role {$company['suggested_owner']} owner for {$company['name']}.", $shown));
+        $count = count($companies) === 1 ? '1 company has' : count($companies).' companies have';
+
+        return $this->result(
+            'company_owners',
+            self::WARN,
+            "{$count} no active owner: {$names}".($more > 0 ? " and {$more} more" : '').'. Nobody in these companies can change the roles or manage the members.',
+            'Make an active user the owner of each company. '.$commands.($more > 0 ? ' The companies list has the other companies.' : ''),
+        ) + ['companies' => $companies];
     }
 
     private function repair(string $id): void

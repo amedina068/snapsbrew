@@ -25,7 +25,7 @@ class StatusAndDoctorCommandTest extends TestCase
 
     private const STATUS_KEYS = ['version', 'app_url', 'environment', 'database', 'queue', 'scheduler', 'storage_link', 'mail_driver', 'cache_driver', 'renderer', 'mcp', 'owner_exists'];
 
-    private const CHECK_IDS = ['app_key', 'database', 'migrations', 'storage_writable', 'storage_link', 'passport_keys', 'fonts_cache', 'renderer', 'test_render', 'queue_heartbeat', 'scheduler_heartbeat', 'cache_store', 'mail', 'owner'];
+    private const CHECK_IDS = ['app_key', 'database', 'migrations', 'storage_writable', 'storage_link', 'passport_keys', 'fonts_cache', 'renderer', 'test_render', 'queue_heartbeat', 'scheduler_heartbeat', 'cache_store', 'mail', 'owner', 'company_owners'];
 
     public function test_status_returns_every_field_of_the_contract()
     {
