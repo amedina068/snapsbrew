@@ -110,7 +110,7 @@ class SnapImportCsvTest extends TestCase
 
     private function uploadedFileWithContent(string $content, string $filename): UploadedFile
     {
-        $path = tempnam(sys_get_temp_dir(), 'import_');
+        $path = $this->temporaryFile('import_');
         file_put_contents($path, $content);
 
         return new UploadedFile($path, $filename, null, null, true);
@@ -274,7 +274,7 @@ class SnapImportCsvTest extends TestCase
         // has to agree. The Csv reader then gets zip bytes.
         $spreadsheet = new Spreadsheet;
         $spreadsheet->getActiveSheet()->setCellValue(Coordinate::stringFromColumnIndex(1).'1', 'headline');
-        $path = tempnam(sys_get_temp_dir(), 'xlsx_').'.xlsx';
+        $path = $this->temporaryFile('xlsx_', '.xlsx');
         (new Xlsx($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
 

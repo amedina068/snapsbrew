@@ -97,7 +97,7 @@ class MediaApiTest extends TestCase
         [, $token] = $this->createApiUser();
 
         $gif = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
-        $path = tempnam(sys_get_temp_dir(), 'poly');
+        $path = $this->temporaryFile('poly');
         file_put_contents($path, $gif.'<html><p>not an image</p></html>');
 
         $response = $this->withHeader('Authorization', "Bearer {$token}")
@@ -114,7 +114,7 @@ class MediaApiTest extends TestCase
         [, $token] = $this->createApiUser();
 
         $gif = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
-        $path = tempnam(sys_get_temp_dir(), 'poly');
+        $path = $this->temporaryFile('poly');
         file_put_contents($path, $gif.'<html><p>not an image</p></html>');
 
         // The client calls it a PNG. The content is a GIF, so the stored name

@@ -88,7 +88,7 @@ class WebhookUrlSsrfTest extends TestCase
             }
         }
 
-        $path = tempnam(sys_get_temp_dir(), 'xlsx_').'.xlsx';
+        $path = $this->temporaryFile('xlsx_', '.xlsx');
         (new Xlsx($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
 
