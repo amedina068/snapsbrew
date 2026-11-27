@@ -109,7 +109,7 @@ class SnapImportRealBatchTest extends TestCase
             $sheet->setCellValue('A'.($index + 2), $headline);
         }
 
-        $path = tempnam(sys_get_temp_dir(), 'xlsx_').'.xlsx';
+        $path = $this->temporaryFile('xlsx_', '.xlsx');
         (new Xlsx($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
 
@@ -394,7 +394,7 @@ class SnapImportRealBatchTest extends TestCase
         $sheet->setCellValue('A1', 'headline');
         $sheet->setCellValue('A2', 'Row A');
         $sheet->setCellValue('A3', 'Row B');
-        $path = tempnam(sys_get_temp_dir(), 'xlsx_').'.xlsx';
+        $path = $this->temporaryFile('xlsx_', '.xlsx');
         (new Xlsx($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
 

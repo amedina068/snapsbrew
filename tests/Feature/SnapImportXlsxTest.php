@@ -70,7 +70,7 @@ class SnapImportXlsxTest extends TestCase
             }
         }
 
-        $path = tempnam(sys_get_temp_dir(), 'xlsx_').'.xlsx';
+        $path = $this->temporaryFile('xlsx_', '.xlsx');
         (new Xlsx($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
 
@@ -261,7 +261,7 @@ class SnapImportXlsxTest extends TestCase
         $sheet->setCellValue('A2', 'A');
         $sheet->setCellValue('B2', '1');
 
-        $path = tempnam(sys_get_temp_dir(), 'xls_').'.xls';
+        $path = $this->temporaryFile('xls_', '.xls');
         (new Xls($spreadsheet))->save($path);
         $spreadsheet->disconnectWorksheets();
 
